@@ -79,7 +79,7 @@
                                class="w-full text-2xl p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura text-center font-bold">
                     </div>
                     <div>
-                        <input type="text" id="item-name" placeholder="例如：水電工程第一期、大金冷氣..." required
+                        <input type="text" id="item-name" placeholder="例如：裝潢頭期款、大金冷氣..." required
                                class="w-full p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura">
                     </div>
 
@@ -229,11 +229,13 @@
     </div>
 
     <script type="module">
+        // 修正點：統一改用與下方完全相容的全新 10.12.2 版本模組
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+        // 修正點：替換成你提供的官方 100% 正確金鑰 (修正了原本金鑰多一個英文字母 l 的手誤)
         const firebaseConfig = {
-          apiKey: "AIzaSyDMlzCt1NyVtNnkmCT6i5dXy32nWl5mhWM",
+          apiKey: "AIzaSyDM1zCt1NyVtNnkmCT6i5dXy32nWl5mhWM",
           authDomain: "new-house-24ecb.firebaseapp.com",
           projectId: "new-house-24ecb",
           storageBucket: "new-house-24ecb.firebasestorage.app",
@@ -277,7 +279,7 @@
                 if (!docSnap.exists()) {
                     await setDoc(categoryDocRef, { list: defaultCategories });
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("初始化分類失敗:", e); }
         }
         initCategories();
 
@@ -306,21 +308,28 @@
             
             try {
                 const btn = document.getElementById('add-category-btn');
-                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>...';
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 處理中...';
                 btn.disabled = true;
-                await setDoc(categoryDocRef, { list: arrayUnion(val) }, { merge: true });
+                
+                await updateDoc(categoryDocRef, { list: arrayUnion(val) });
+                
                 input.value = '';
                 btn.innerHTML = '<i class="fa-solid fa-plus"></i> 新增';
                 btn.disabled = false;
             } catch (e) {
-                alert("新增失敗！");
-                document.getElementById('add-category-btn').disabled = false;
+                console.error("新增失敗:", e);
+                alert("新增失敗，請重試！");
+                const btn = document.getElementById('add-category-btn');
+                btn.innerHTML = '<i class="fa-solid fa-plus"></i> 新增';
+                btn.disabled = false;
             }
         });
 
         window.deleteCategory = async function(cat) {
             if(confirm(`確定要刪除「${cat}」嗎？`)) {
-                await updateDoc(categoryDocRef, { list: arrayRemove(cat) });
+                try {
+                    await updateDoc(categoryDocRef, { list: arrayRemove(cat) });
+                } catch (e) { console.error(e); }
             }
         }
 
