@@ -151,9 +151,9 @@
         </main>
 
         <main id="page-chart" class="page-section px-5 pb-10 text-center pt-20">
-            <i class="fa-solid fa-person-digging text-6xl text-mint mb-4"></i>
-            <h3 class="font-bold text-xl mb-2 text-textMain">統計圖表施工中</h3>
-            <p class="text-gray-400 text-sm">未來可以在這裡看各區域、各工種的花費圓餅圖喔！</p>
+            <i class="fa-solid fa-folder-open text-6xl text-mint mb-4"></i>
+            <h3 class="font-bold text-xl mb-2 text-textMain">裝潢圖面與檔案庫</h3>
+            <p class="text-gray-400 text-sm">即將開放！未來可以把 PDF 報價單、<br>格局圖跟水電圖上傳到這裡集中管理。</p>
         </main>
 
         <main id="page-settings" class="page-section px-5 pb-10 pt-5">
@@ -182,7 +182,7 @@
                 <i class="fa-solid fa-list-check text-lg mb-1"></i>明細
             </button>
             <button id="nav-chart" class="nav-btn w-1/4 flex flex-col items-center p-2 text-gray-400 transition-colors">
-                <i class="fa-solid fa-chart-pie text-lg mb-1"></i>統計
+                <i class="fa-solid fa-folder text-lg mb-1"></i>圖庫
             </button>
             <button id="nav-settings" class="nav-btn w-1/4 flex flex-col items-center p-2 text-gray-400 transition-colors">
                 <i class="fa-solid fa-gear text-lg mb-1"></i>設定
@@ -191,29 +191,26 @@
 
     </div>
 
-<script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+    <script type="module">
+        // 統一使用 10.12.2 版本，並引入了 Storage 功能
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyDM1zCt1NyVtNnkmCT6i5dXy32nWl5mhWM",
-    authDomain: "new-house-24ecb.firebaseapp.com",
-    projectId: "new-house-24ecb",
-    storageBucket: "new-house-24ecb.firebasestorage.app",
-    messagingSenderId: "212198350832",
-    appId: "1:212198350832:web:722951ad61a042802b8735",
-    measurementId: "G-CRPMKV6RZG"
-  };
+        const firebaseConfig = {
+          apiKey: "AIzaSyDMlzCt1NyVtNnkmCT6i5dXy32nWl5mhWM",
+          authDomain: "new-house-24ecb.firebaseapp.com",
+          projectId: "new-house-24ecb",
+          storageBucket: "new-house-24ecb.firebasestorage.app",
+          messagingSenderId: "212198350832",
+          appId: "1:212198350832:web:722951ad61a042802b8735",
+          measurementId: "G-CRPMKV6RZG"
+        };
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        // 初始化 Storage 服務 (為了未來的圖庫做準備)
+        const storage = getStorage(app); 
 
         // --- 頁籤切換邏輯 ---
         const tabs = [
@@ -241,29 +238,29 @@
             alert('【報價單 AI 識別】\n\n這是一個預留的介面！因為串接真正的 AI 會暴露密碼，如果未來有寫後端伺服器就能正式啟用囉！');
         }
 
-        // --- 自訂資料庫邏輯 ---
+        // --- 自訂分類邏輯 ---
         const categoryDocRef = doc(db, "settings", "appCategories");
         const defaultCategories = ["設計師裝潢費用", "家電", "軟裝", "裝飾類", "其他"];
 
-        // 初始化：如果資料庫裡沒有設定，就寫入預設值
         async function initCategories() {
-            const docSnap = await getDoc(categoryDocRef);
-            if (!docSnap.exists()) {
-                await setDoc(categoryDocRef, { list: defaultCategories });
+            try {
+                const docSnap = await getDoc(categoryDocRef);
+                if (!docSnap.exists()) {
+                    await setDoc(categoryDocRef, { list: defaultCategories });
+                }
+            } catch (e) {
+                console.error("初始化分類失敗:", e);
             }
         }
         initCategories();
 
-        // 監聽變更，同步更新首頁選單和設定頁列表
         onSnapshot(categoryDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const cats = docSnap.data().list || [];
                 
-                // 1. 更新首頁的 Select 選單
                 const catSelect = document.getElementById('category');
                 catSelect.innerHTML = cats.map(c => `<option value="${c}">📌 ${c}</option>`).join('');
 
-                // 2. 更新設定頁的列表
                 const catSetList = document.getElementById('category-settings-list');
                 catSetList.innerHTML = cats.map(c => `
                     <div class="flex justify-between items-center bg-paper p-3 rounded-2xl text-sm font-bold border border-gray-100 shadow-sm">
@@ -276,27 +273,22 @@
             }
         });
 
-// 新增分類按鈕事件
         document.getElementById('add-category-btn').addEventListener('click', async () => {
             const input = document.getElementById('new-category-input');
             const val = input.value.trim();
             
-            // 1. 防呆檢查：如果沒輸入文字就按新增
             if (!val) {
                 alert("請先輸入想要新增的分類名稱喔！");
                 return;
             }
             
             try {
-                // 2. 讓按鈕顯示處理中，給予視覺回饋
                 const btn = document.getElementById('add-category-btn');
                 btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 處理中...';
                 btn.disabled = true;
                 
-                // 3. 安全寫入資料庫 (使用 setDoc + merge 避免文件不存在的錯誤)
                 await setDoc(categoryDocRef, { list: arrayUnion(val) }, { merge: true });
                 
-                // 4. 成功後清空輸入框並恢復按鈕
                 input.value = '';
                 btn.innerHTML = '<i class="fa-solid fa-plus"></i> 新增';
                 btn.disabled = false;
@@ -310,10 +302,8 @@
             }
         });
 
-        // 刪除分類 (全域函式供 onclick 使用)
         window.deleteCategory = async function(cat) {
             if(confirm(`確定要刪除「${cat}」這個分類嗎？\n(注意：這不會刪除過去已經記下的帳目)`)) {
-                // arrayRemove 會從陣列中移除該項目
                 await updateDoc(categoryDocRef, { list: arrayRemove(cat) });
             }
         }
