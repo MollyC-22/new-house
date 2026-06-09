@@ -71,7 +71,6 @@
                         <input type="number" id="amount" placeholder="輸入金額..." required
                                class="w-full text-2xl p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura text-center font-bold">
                     </div>
-                    
                     <div>
                         <input type="text" id="item-name" placeholder="例如：裝潢第一期、大金冷氣..." required
                                class="w-full p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura">
@@ -79,11 +78,7 @@
 
                     <div class="grid grid-cols-2 gap-2">
                         <select id="category" class="w-full p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura text-sm font-bold text-textMain">
-                            <option value="設計師裝潢費用">📐 設計師裝潢費用</option>
-                            <option value="家電">📺 家電</option>
-                            <option value="軟裝">🪴 軟裝</option>
-                            <option value="裝飾類">🖼️ 裝飾類</option>
-                            <option value="其他">🏷️ 其他</option>
+                            <option value="">載入中...</option>
                         </select>
                         <select id="area" class="w-full p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura text-sm font-bold text-textMain">
                             <option value="不分區">🏠 不分區/全室</option>
@@ -152,8 +147,7 @@
 
         <main id="page-list" class="page-section px-5 pb-10">
             <h3 class="font-bold mb-4 pl-2"><i class="fa-solid fa-list-ul text-sakura mr-2"></i>所有明細</h3>
-            <div id="expense-list" class="space-y-3">
-                </div>
+            <div id="expense-list" class="space-y-3"></div>
         </main>
 
         <main id="page-chart" class="page-section px-5 pb-10 text-center pt-20">
@@ -162,10 +156,22 @@
             <p class="text-gray-400 text-sm">未來可以在這裡看各區域、各工種的花費圓餅圖喔！</p>
         </main>
 
-        <main id="page-settings" class="page-section px-5 pb-10 text-center pt-20">
-            <i class="fa-solid fa-gear text-6xl text-babyblue mb-4"></i>
-            <h3 class="font-bold text-xl mb-2 text-textMain">設定頁施工中</h3>
-            <p class="text-gray-400 text-sm">未來可以在這裡設定預算上限或匯出 Excel 表格！</p>
+        <main id="page-settings" class="page-section px-5 pb-10 pt-5">
+            <h3 class="font-bold mb-4 pl-2"><i class="fa-solid fa-gear text-babyblue mr-2"></i>分類設定</h3>
+            
+            <div class="bg-white p-5 rounded-3xl shadow-sm border-2 border-babyblue/30">
+                <p class="text-sm font-bold mb-3">自訂記帳分類選項</p>
+                
+                <div class="flex gap-2 mb-4">
+                    <input type="text" id="new-category-input" placeholder="輸入新分類名稱..." class="flex-1 p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-babyblue text-sm font-bold">
+                    <button id="add-category-btn" class="bg-babyblue text-textMain px-4 py-2 rounded-2xl font-bold shadow-sm btn-press">
+                        <i class="fa-solid fa-plus"></i> 新增
+                    </button>
+                </div>
+
+                <div id="category-settings-list" class="space-y-2">
+                    </div>
+            </div>
         </main>
 
         <nav class="fixed bottom-0 w-full max-w-md bg-white border-t border-gray-100 pb-safe pt-2 px-2 flex justify-around items-center text-[10px] shadow-[0_-10px_20px_rgba(0,0,0,0.03)] rounded-t-3xl z-20">
@@ -186,10 +192,10 @@
     </div>
 
     <script type="module">
+        // 引入了更多操作資料庫需要的方法 (doc, setDoc, updateDoc 等)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // 你的專屬金鑰
         const firebaseConfig = {
           apiKey: "AIzaSyDMlzCt1NyVtNnkmCT6i5dXy32nWl5mhWM",
           authDomain: "new-house-24ecb.firebaseapp.com",
@@ -225,12 +231,65 @@
             });
         });
 
-        // --- 報價單 AI 模擬提示 ---
         window.mockOCR = function() {
-            alert('【報價單 AI 識別】\n\n這是一個預留的介面！因為要串接真正的 AI (像是 ChatGPT Vision) 需要保護 API 密碼，不能直接暴露在網頁程式碼裡。未來若專案擴充後端伺服器，就可以讓它幫你自動讀取圖片填寫金額囉！');
+            alert('【報價單 AI 識別】\n\n這是一個預留的介面！因為串接真正的 AI 會暴露密碼，如果未來有寫後端伺服器就能正式啟用囉！');
         }
 
-        // --- 照片上傳與壓縮處理 ---
+        // --- 自訂分類資料庫邏輯 ---
+        const categoryDocRef = doc(db, "settings", "appCategories");
+        const defaultCategories = ["設計師裝潢費用", "家電", "軟裝", "裝飾類", "其他"];
+
+        // 初始化：如果資料庫裡沒有分類設定，就寫入預設值
+        async function initCategories() {
+            const docSnap = await getDoc(categoryDocRef);
+            if (!docSnap.exists()) {
+                await setDoc(categoryDocRef, { list: defaultCategories });
+            }
+        }
+        initCategories();
+
+        // 監聽分類變更，同步更新首頁選單和設定頁列表
+        onSnapshot(categoryDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const cats = docSnap.data().list || [];
+                
+                // 1. 更新首頁的 Select 選單
+                const catSelect = document.getElementById('category');
+                catSelect.innerHTML = cats.map(c => `<option value="${c}">📌 ${c}</option>`).join('');
+
+                // 2. 更新設定頁的列表
+                const catSetList = document.getElementById('category-settings-list');
+                catSetList.innerHTML = cats.map(c => `
+                    <div class="flex justify-between items-center bg-paper p-3 rounded-2xl text-sm font-bold border border-gray-100 shadow-sm">
+                        <span>${c}</span>
+                        <button onclick="deleteCategory('${c}')" class="text-red-400 p-2 btn-press bg-white rounded-xl shadow-sm">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                `).join('');
+            }
+        });
+
+        // 新增分類按鈕事件
+        document.getElementById('add-category-btn').addEventListener('click', async () => {
+            const input = document.getElementById('new-category-input');
+            const val = input.value.trim();
+            if (val) {
+                // arrayUnion 會自動把新項目加進陣列 (如果沒有重複的話)
+                await updateDoc(categoryDocRef, { list: arrayUnion(val) });
+                input.value = '';
+            }
+        });
+
+        // 刪除分類 (全域函式供 onclick 使用)
+        window.deleteCategory = async function(cat) {
+            if(confirm(`確定要刪除「${cat}」這個分類嗎？\n(注意：這不會刪除過去已經記下的帳目)`)) {
+                // arrayRemove 會從陣列中移除該項目
+                await updateDoc(categoryDocRef, { list: arrayRemove(cat) });
+            }
+        }
+
+        // --- 照片壓縮與預覽 ---
         let currentPhotoBase64 = null;
         const photoInput = document.getElementById('photo-upload');
         const photoPreview = document.getElementById('photo-preview');
@@ -244,9 +303,8 @@
             reader.onload = function(event) {
                 const img = new Image();
                 img.onload = function() {
-                    // 使用 Canvas 壓縮圖片，避免塞爆資料庫
                     const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 500; // 壓縮後的最大寬度
+                    const MAX_WIDTH = 500; 
                     let width = img.width;
                     let height = img.height;
                     
@@ -260,7 +318,6 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
                     
-                    // 轉成 Base64 字串 (品質 0.7)
                     currentPhotoBase64 = canvas.toDataURL('image/jpeg', 0.7); 
                     photoPreviewImg.src = currentPhotoBase64;
                     photoPreview.classList.remove('hidden');
@@ -276,7 +333,7 @@
             photoPreview.classList.add('hidden');
         }
 
-        // DOM 元素
+        // --- 記帳主邏輯 ---
         const form = document.getElementById('expense-form');
         const listContainer = document.getElementById('expense-list');
         const totalEl = document.getElementById('total-amount');
@@ -285,7 +342,6 @@
 
         const formatMoney = (num) => new Intl.NumberFormat('zh-TW').format(num);
 
-        // 即時監聽資料庫
         const expensesRef = collection(db, "expenses");
         const q = query(expensesRef, orderBy("timestamp", "desc"));
 
@@ -339,7 +395,6 @@
             littletPaidEl.innerText = `$${formatMoney(littletTotal)}`;
         });
 
-        // 處理表單送出
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -355,7 +410,6 @@
             const dateStr = `${today.getMonth()+1}/${today.getDate()}`;
 
             try {
-                // 送出按鈕顯示載入中
                 const submitBtn = form.querySelector('button[type="submit"]');
                 const originalText = submitBtn.innerText;
                 submitBtn.innerText = '儲存中...';
@@ -369,21 +423,18 @@
                     area: area, 
                     paymentMethod: paymentMethod,
                     notes: notes,
-                    photo: currentPhotoBase64, // 存入壓縮後的照片資料
+                    photo: currentPhotoBase64,
                     date: dateStr,
                     timestamp: new Date()
                 });
                 
-                // 重置表單與照片
                 form.reset();
                 removePhoto();
                 document.querySelector('input[name="payer"][value="芝芝"]').checked = true;
                 
-                // 恢復按鈕狀態
                 submitBtn.innerText = originalText;
                 submitBtn.disabled = false;
                 
-                // 自動切換到明細清單頁看結果
                 document.getElementById('nav-list').click();
 
             } catch (e) {
