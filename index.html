@@ -77,6 +77,12 @@
                 
                 <form id="expense-form" class="space-y-4">
                     <div>
+                        <label class="block text-xs text-textMain mb-1 font-bold pl-1">📅 選擇消費日期</label>
+                        <input type="date" id="expense-date" required
+                               class="w-full p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura text-sm font-bold text-textMain">
+                    </div>
+
+                    <div>
                         <input type="number" id="amount" placeholder="輸入金額..." required
                                class="w-full text-2xl p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura text-center font-bold">
                     </div>
@@ -166,9 +172,14 @@
                         </button>
                     </div>
 
-                    <button type="submit" class="w-full p-4 bg-sakura text-white rounded-2xl font-bold text-lg shadow-md btn-press mt-2">
-                        儲存花費
-                    </button>
+                    <div class="flex gap-2">
+                        <button type="submit" id="submit-btn" class="flex-1 p-4 bg-sakura text-white rounded-2xl font-bold text-lg shadow-md btn-press mt-2">
+                            儲存花費
+                        </button>
+                        <button type="button" id="cancel-edit-btn" onclick="cancelEdit()" class="hidden flex-1 p-4 bg-gray-200 text-textMain rounded-2xl font-bold text-lg shadow-md btn-press mt-2">
+                            取消修改
+                        </button>
+                    </div>
                 </form>
             </section>
         </main>
@@ -218,23 +229,15 @@
             <div class="space-y-6">
                 <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
                     <h4 class="font-bold text-center text-textMain mb-2 text-sm bg-paper py-2 rounded-xl">分類支出佔比</h4>
-                    <div class="relative w-full h-64 flex justify-center">
-                        <canvas id="chart-category"></canvas>
-                    </div>
+                    <div class="relative w-full h-64 flex justify-center"><canvas id="chart-category"></canvas></div>
                 </div>
-
                 <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
                     <h4 class="font-bold text-center text-textMain mb-2 text-sm bg-paper py-2 rounded-xl">區域花費佔比</h4>
-                    <div class="relative w-full h-64 flex justify-center">
-                        <canvas id="chart-area"></canvas>
-                    </div>
+                    <div class="relative w-full h-64 flex justify-center"><canvas id="chart-area"></canvas></div>
                 </div>
-
                 <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
                     <h4 class="font-bold text-center text-textMain mb-2 text-sm bg-paper py-2 rounded-xl">成員貢獻佔比</h4>
-                    <div class="relative w-full h-64 flex justify-center">
-                        <canvas id="chart-payer"></canvas>
-                    </div>
+                    <div class="relative w-full h-64 flex justify-center"><canvas id="chart-payer"></canvas></div>
                 </div>
             </div>
         </main>
@@ -245,9 +248,9 @@
             <div class="bg-white p-5 rounded-3xl shadow-sm border-2 border-babyblue/30">
                 <p class="text-sm font-bold mb-3">自訂記帳分類</p>
                 
-                <div class="flex gap-2 mb-4">
-                    <input type="text" id="new-category-input" placeholder="輸入新名稱..." class="flex-1 p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-babyblue text-sm font-bold">
-                    <button id="add-category-btn" class="bg-babyblue text-textMain px-4 py-2 rounded-2xl font-bold shadow-sm btn-press">
+                <div class="flex items-center gap-2 mb-4 w-full">
+                    <input type="text" id="new-category-input" placeholder="輸入新名稱..." class="flex-1 h-12 p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-babyblue text-sm font-bold text-textMain">
+                    <button id="add-category-btn" class="h-12 bg-babyblue text-textMain px-4 rounded-2xl font-bold shadow-sm btn-press flex items-center justify-center gap-1 shrink-0 text-sm">
                         <i class="fa-solid fa-plus"></i> 新增
                     </button>
                 </div>
@@ -278,7 +281,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
           apiKey: "AIzaSyDM1zCt1NyVtNnkmCT6i5dXy32nWl5mhWM",
@@ -293,7 +296,13 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- 頁籤切換邏輯 (5頁籤) ---
+        // 全域編輯狀態暫存器
+        let editingId = null;
+
+        // 初始化日期選單預設值為「今天」
+        document.getElementById('expense-date').value = new Date().toISOString().split('T')[0];
+
+        // --- 頁籤切換邏輯 ---
         const tabs = [
             { btn: document.getElementById('nav-home'), page: document.getElementById('page-home') },
             { btn: document.getElementById('nav-list'), page: document.getElementById('page-list') },
@@ -316,27 +325,21 @@
             });
         });
 
-        // --- 表單動態顯示隱藏邏輯 (通路 & 成員) ---
+        // --- 表單顯示隱藏邏輯 ---
         const payerRadios = document.querySelectorAll('input[name="payer"]');
         const payerCustomDiv = document.getElementById('payer-custom-div');
         payerRadios.forEach(radio => {
             radio.addEventListener('change', (e) => {
-                if (e.target.value === '其他') {
-                    payerCustomDiv.classList.remove('hidden');
-                } else {
-                    payerCustomDiv.classList.add('hidden');
-                }
+                if (e.target.value === '其他') payerCustomDiv.classList.remove('hidden');
+                else payerCustomDiv.classList.add('hidden');
             });
         });
 
         const storeSelect = document.getElementById('store-select');
         const storeCustomDiv = document.getElementById('store-custom-div');
         storeSelect.addEventListener('change', (e) => {
-            if (e.target.value === '實體店面' || e.target.value === '其他') {
-                storeCustomDiv.classList.remove('hidden');
-            } else {
-                storeCustomDiv.classList.add('hidden');
-            }
+            if (e.target.value === '實體店面' || e.target.value === '其他') storeCustomDiv.classList.remove('hidden');
+            else storeCustomDiv.classList.add('hidden');
         });
 
         // --- 自訂分類邏輯 ---
@@ -373,7 +376,6 @@
             const input = document.getElementById('new-category-input');
             const val = input.value.trim();
             if (!val) { alert("請先輸入分類名稱喔！"); return; }
-            
             const btn = document.getElementById('add-category-btn');
             try {
                 btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; btn.disabled = true;
@@ -385,8 +387,7 @@
 
         window.deleteCategory = async function(cat) {
             if(confirm(`確定要刪除「${cat}」嗎？`)) {
-                try { await setDoc(categoryDocRef, { list: arrayRemove(cat) }, { merge: true }); } 
-                catch (e) { console.error(e); }
+                try { await setDoc(categoryDocRef, { list: arrayRemove(cat) }, { merge: true }); } catch (e) { console.error(e); }
             }
         }
 
@@ -423,7 +424,7 @@
             currentPhotoBase64 = null; photoInput.value = ''; photoPreview.classList.add('hidden');
         }
 
-        // --- 圖表繪製共用函式 ---
+        // --- 圖表繪製核心 ---
         let chartInstances = {};
         function renderChart(canvasId, dataMap) {
             const ctx = document.getElementById(canvasId).getContext('2d');
@@ -432,6 +433,7 @@
             const bgColors = ['#FFB7B2', '#B5EAD7', '#E2F0CB', '#FFD8B1', '#C5CAE9', '#F8BBD0', '#B2DFDB', '#FFF9C4', '#D1C4E9', '#FFCC80'];
 
             if (chartInstances[canvasId]) { chartInstances[canvasId].destroy(); }
+            if (data.length === 0) return;
 
             chartInstances[canvasId] = new Chart(ctx, {
                 type: 'pie',
@@ -447,8 +449,7 @@
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    let label = context.label || '';
-                                    let value = context.parsed || 0;
+                                    let label = context.label || ''; let value = context.parsed || 0;
                                     let total = context.dataset.data.reduce((a, b) => a + b, 0);
                                     let percentage = Math.round((value / total) * 100) + '%';
                                     return ` ${label}: $${new Intl.NumberFormat('zh-TW').format(value)} (${percentage})`;
@@ -460,47 +461,115 @@
             });
         }
 
-        // --- 記帳資料庫連線與渲染 ---
-        const form = document.getElementById('expense-form');
-        const listContainer = document.getElementById('expense-list');
-        const totalEl = document.getElementById('total-amount');
-        const chichiPaidEl = document.getElementById('chichi-paid');
-        const littletPaidEl = document.getElementById('littlet-paid');
+        // --- 核心：修改資料與刪除資料全域函式 ---
+        window.startEdit = async function(id) {
+            try {
+                const docSnap = await getDoc(doc(db, "expenses", id));
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    editingId = id;
 
-        const formatMoney = (num) => new Intl.NumberFormat('zh-TW').format(num);
+                    // 1. 填入基礎欄位
+                    document.getElementById('amount').value = data.amount;
+                    document.getElementById('item-name').value = data.name;
+                    document.getElementById('category').value = data.category || '';
+                    document.getElementById('area').value = data.area || '不分區';
+                    document.getElementById('payment-method').value = data.paymentMethod || '轉帳';
+                    document.getElementById('expense-date').value = data.fullDate || new Date().toISOString().split('T')[0];
 
+                    // 2. 填入通路欄位
+                    const storeVal = data.store || '';
+                    if (['淘寶', '蝦皮', 'MOMO', 'PCHOME', ''].includes(storeVal)) {
+                        storeSelect.value = storeVal;
+                        storeCustomDiv.classList.add('hidden');
+                    } else {
+                        storeSelect.value = '其他';
+                        document.getElementById('store-other-input').value = storeVal;
+                        storeCustomDiv.classList.remove('hidden');
+                    }
+
+                    // 3. 填入付款人欄位
+                    const payerVal = data.payer || '芝芝';
+                    if (['芝芝', '小T'].includes(payerVal)) {
+                        document.querySelector(`input[name="payer"][value="${payerVal}"]`).checked = true;
+                        payerCustomDiv.classList.add('hidden');
+                    } else {
+                        document.querySelector('input[name="payer"][value="其他"]').checked = true;
+                        document.getElementById('payer-other-input').value = payerVal;
+                        payerCustomDiv.classList.remove('hidden');
+                    }
+
+                    // 4. 恢復暫存的照片
+                    if (data.photo) {
+                        currentPhotoBase64 = data.photo;
+                        photoPreviewImg.src = data.photo;
+                        photoPreview.classList.remove('hidden');
+                    } else {
+                        removePhoto();
+                    }
+
+                    // 5. 切換按鈕外觀成「修改模式」
+                    const submitBtn = document.getElementById('submit-btn');
+                    submitBtn.innerText = '💾 更新這筆花費';
+                    submitBtn.classList.remove('bg-sakura');
+                    submitBtn.classList.add('bg-orange-400');
+                    document.getElementById('cancel-edit-btn').classList.remove('hidden');
+
+                    // 6. 自動滑回首頁填寫
+                    document.getElementById('nav-home').click();
+                }
+            } catch (e) { alert("讀取花費失敗：" + e.message); }
+        };
+
+        window.cancelEdit = function() {
+            editingId = null;
+            form.reset();
+            removePhoto();
+            document.getElementById('expense-date').value = new Date().toISOString().split('T')[0];
+            payerCustomDiv.classList.add('hidden');
+            storeCustomDiv.classList.add('hidden');
+
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.innerText = '儲存花費';
+            submitBtn.classList.remove('bg-orange-400');
+            submitBtn.classList.add('bg-sakura');
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+        };
+
+        window.deleteExpense = async function(id, name) {
+            if (confirm(`確定要刪除「${name}」這筆帳目嗎？\n刪除後就無法恢復囉！`)) {
+                try { await deleteDoc(doc(db, "expenses", id)); } 
+                catch (e) { alert("刪除失敗：" + e.message); }
+            }
+        };
+
+        // --- 監聽資料庫明細渲染 ---
         const expensesRef = collection(db, "expenses");
         const q = query(expensesRef, orderBy("timestamp", "desc"));
 
         onSnapshot(q, (snapshot) => {
             listContainer.innerHTML = '';
             let total = 0; let chichiTotal = 0; let littletTotal = 0;
-            
-            // 圖表數據包
             let categoryData = {}; let areaData = {}; let payerData = {};
 
-            snapshot.forEach((doc) => {
-                const exp = doc.data();
+            snapshot.forEach((docSnap) => {
+                const exp = docSnap.data();
+                const docId = docSnap.id;
                 total += exp.amount;
                 
-                // 處理付款人 (芝芝/小T/其他人)
                 const payerStr = exp.payer || '未知';
                 if(payerStr === '芝芝') chichiTotal += exp.amount;
                 else if(payerStr === '小T') littletTotal += exp.amount;
                 
-                // 累積圖表數據
                 categoryData[exp.category || '未分類'] = (categoryData[exp.category || '未分類'] || 0) + exp.amount;
                 areaData[exp.area || '不分區'] = (areaData[exp.area || '不分區'] || 0) + exp.amount;
                 payerData[payerStr] = (payerData[payerStr] || 0) + exp.amount;
 
-                // 產生明細卡片 UI
                 const areaTag = exp.area && exp.area !== '不分區' ? `<span class="bg-babyblue/50 text-textMain px-2 py-0.5 rounded-full">${exp.area}</span>` : '';
                 const storeTag = exp.store ? `<span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full"><i class="fa-solid fa-cart-shopping mr-1"></i>${exp.store}</span>` : '';
                 const photoHtml = exp.photo ? `<img src="${exp.photo}" class="mt-2 w-full h-32 object-cover rounded-xl border">` : '';
                 
-                // 判斷圓形頭像字首與顏色
-                let avatarColor = 'bg-mint text-textMain';
-                let avatarChar = payerStr.charAt(0);
+                let avatarColor = 'bg-mint text-textMain'; let avatarChar = payerStr.charAt(0);
                 if (payerStr === '芝芝') { avatarColor = 'bg-sakura text-white'; avatarChar = '芝'; }
                 else if (payerStr === '小T') { avatarColor = 'bg-babyblue text-textMain'; avatarChar = 'T'; }
 
@@ -525,6 +594,14 @@
                         <div class="font-bold text-lg text-sakura">$${formatMoney(exp.amount)}</div>
                     </div>
                     ${photoHtml}
+                    <div class="flex justify-end gap-2 mt-3 pt-2 border-t border-gray-100">
+                        <button onclick="startEdit('${docId}')" class="text-xs bg-gray-50 text-gray-500 px-3 py-1.5 rounded-xl border border-gray-100 font-bold btn-press">
+                            <i class="fa-solid fa-pen-to-square mr-1"></i>修改
+                        </button>
+                        <button onclick="deleteExpense('${docId}', '${exp.name}')" class="text-xs bg-red-50 text-red-400 px-3 py-1.5 rounded-xl border border-red-100 font-bold btn-press">
+                            <i class="fa-solid fa-trash-can mr-1"></i>刪除
+                        </button>
+                    </div>
                 `;
                 listContainer.appendChild(item);
             });
@@ -533,12 +610,12 @@
             chichiPaidEl.innerText = `$${formatMoney(chichiTotal)}`;
             littletPaidEl.innerText = `$${formatMoney(littletTotal)}`;
 
-            // 觸發圖表更新
             renderChart('chart-category', categoryData);
             renderChart('chart-area', areaData);
             renderChart('chart-payer', payerData);
         });
 
+        // --- 儲存 / 更新表單監聽器 ---
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const amount = parseInt(document.getElementById('amount').value);
@@ -546,7 +623,11 @@
             const category = document.getElementById('category').value;
             const area = document.getElementById('area').value; 
             const paymentMethod = document.getElementById('payment-method').value;
-            const today = new Date(); const dateStr = `${today.getMonth()+1}/${today.getDate()}`;
+            
+            // 處理選單自訂日期
+            const fullDate = document.getElementById('expense-date').value;
+            const dateParts = fullDate.split('-');
+            const dateStr = `${parseInt(dateParts[1])}/${parseInt(dateParts[2])}`; // 格式化成 cute 縮寫 M/D
 
             // 處理自訂付款人
             let payer = document.querySelector('input[name="payer"]:checked').value;
@@ -563,25 +644,30 @@
             }
 
             try {
-                const submitBtn = form.querySelector('button[type="submit"]');
-                submitBtn.innerText = '儲存中...'; submitBtn.disabled = true;
+                const submitBtn = document.getElementById('submit-btn');
+                submitBtn.innerText = '處理中...'; submitBtn.disabled = true;
 
-                await addDoc(collection(db, "expenses"), {
+                const expenseData = {
                     amount, name, payer, category, area, paymentMethod, store,
-                    photo: currentPhotoBase64, date: dateStr, timestamp: new Date()
-                });
+                    photo: currentPhotoBase64, date: dateStr, fullDate: fullDate, timestamp: new Date()
+                };
+
+                if (editingId) {
+                    // 模式 A：更新既有資料
+                    await setDoc(doc(db, "expenses", editingId), expenseData, { merge: true });
+                    cancelEdit(); // 還原表單與按鈕外觀
+                } else {
+                    // 模式 B：新增花費
+                    await addDoc(collection(db, "expenses"), expenseData);
+                    form.reset(); removePhoto();
+                    document.getElementById('expense-date').value = new Date().toISOString().split('T')[0];
+                }
                 
-                // 表單重置與隱藏欄位還原
-                form.reset(); removePhoto();
-                document.querySelector('input[name="payer"][value="芝芝"]').checked = true;
-                document.getElementById('payer-custom-div').classList.add('hidden');
-                document.getElementById('store-custom-div').classList.add('hidden');
-                
-                submitBtn.innerText = '儲存花費'; submitBtn.disabled = false;
                 document.getElementById('nav-list').click();
-            } catch (e) {
-                alert("儲存失敗！原因：\n" + e.message);
-                form.querySelector('button[type="submit"]').disabled = false;
+            } catch (e) { alert("操作失敗！原因：\n" + e.message); } 
+            finally {
+                const submitBtn = document.getElementById('submit-btn');
+                if(!editingId) { submitBtn.innerText = '儲存花費'; submitBtn.disabled = false; }
             }
         });
     </script>
