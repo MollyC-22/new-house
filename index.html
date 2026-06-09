@@ -33,7 +33,6 @@
         ::-webkit-scrollbar { display: none; }
         .app-container { padding-bottom: 80px; }
         .btn-press:active { transform: scale(0.95); transition: all 0.1s; }
-        /* 用來切換頁面的 CSS class */
         .page-section { display: none; }
         .page-section.active { display: block; }
     </style>
@@ -74,23 +73,40 @@
                     </div>
                     
                     <div>
-                        <input type="text" id="item-name" placeholder="例如：TOTO 馬桶、設計費..." required
+                        <input type="text" id="item-name" placeholder="例如：報價單第一期、TOTO馬桶..." required
                                class="w-full p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura">
                     </div>
 
-                    <div class="flex gap-2">
-                        <select id="category" class="flex-1 p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura text-sm font-bold text-textMain">
-                            <option value="基礎工程">🧱 基礎工程</option>
-                            <option value="木作系統櫃">🪚 木作系統</option>
-                            <option value="家具家電">🛋️ 家具家電</option>
-                            <option value="軟裝佈置">🪴 軟裝佈置</option>
-                            <option value="設計費用">📐 設計費用</option>
-                            <option value="其他雜支">🏷️ 其他雜支</option>
+                    <div class="grid grid-cols-2 gap-2">
+                        <select id="category" class="w-full p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura text-sm font-bold text-textMain">
+                            <option value="系統櫃">🗄️ 系統櫃</option>
+                            <option value="木作">🪚 木作</option>
+                            <option value="水電">⚡ 水電</option>
+                            <option value="玻璃">🪟 玻璃</option>
+                            <option value="油漆">🖌️ 油漆</option>
+                            <option value="泥作">🧱 泥作</option>
+                            <option value="家電">📺 家電</option>
+                            <option value="軟裝">🪴 軟裝 (窗簾/傢俱)</option>
+                            <option value="其他">🏷️ 其他</option>
                         </select>
-                        <select id="payment-method" class="flex-1 p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura text-sm font-bold text-textMain">
+                        <select id="area" class="w-full p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura text-sm font-bold text-textMain">
+                            <option value="不分區">🏠 不分區/全室</option>
+                            <option value="玄關">🚪 玄關</option>
+                            <option value="客廳">🛋️ 客廳</option>
+                            <option value="主臥">🛏️ 主臥</option>
+                            <option value="更衣室">👗 更衣室</option>
+                            <option value="次臥">🧸 次臥</option>
+                            <option value="衛浴">🛁 衛浴</option>
+                            <option value="廚房餐廳">🍽️ 廚房餐廳</option>
+                            <option value="陽台">🌿 陽台</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <select id="payment-method" class="w-full p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura text-sm font-bold text-textMain">
+                            <option value="轉帳">🏦 轉帳</option>
                             <option value="刷卡">💳 刷卡</option>
                             <option value="現金">💵 現金</option>
-                            <option value="轉帳">🏦 轉帳</option>
                         </select>
                     </div>
 
@@ -131,12 +147,30 @@
                 </div>
         </main>
 
-        <nav class="fixed bottom-0 w-full max-w-md bg-white border-t border-gray-100 pb-safe pt-2 px-6 flex justify-around items-center text-xs shadow-[0_-10px_20px_rgba(0,0,0,0.03)] rounded-t-3xl z-20">
-            <button id="nav-home" class="nav-btn flex flex-col items-center p-2 text-sakura font-bold transition-colors">
+        <main id="page-chart" class="page-section px-5 pb-10 text-center pt-20">
+            <i class="fa-solid fa-person-digging text-6xl text-mint mb-4"></i>
+            <h3 class="font-bold text-xl mb-2 text-textMain">統計圖表施工中</h3>
+            <p class="text-gray-400 text-sm">未來可以在這裡看各區域、各工種的花費圓餅圖喔！</p>
+        </main>
+
+        <main id="page-settings" class="page-section px-5 pb-10 text-center pt-20">
+            <i class="fa-solid fa-gear text-6xl text-babyblue mb-4"></i>
+            <h3 class="font-bold text-xl mb-2 text-textMain">設定頁施工中</h3>
+            <p class="text-gray-400 text-sm">未來可以在這裡設定預算上限或匯出 Excel 表格！</p>
+        </main>
+
+        <nav class="fixed bottom-0 w-full max-w-md bg-white border-t border-gray-100 pb-safe pt-2 px-2 flex justify-around items-center text-[10px] shadow-[0_-10px_20px_rgba(0,0,0,0.03)] rounded-t-3xl z-20">
+            <button id="nav-home" class="nav-btn w-1/4 flex flex-col items-center p-2 text-sakura font-bold transition-colors">
                 <i class="fa-solid fa-house text-lg mb-1"></i>首頁
             </button>
-            <button id="nav-list" class="nav-btn flex flex-col items-center p-2 text-gray-400 transition-colors">
-                <i class="fa-solid fa-list-check text-lg mb-1"></i>明細清單
+            <button id="nav-list" class="nav-btn w-1/4 flex flex-col items-center p-2 text-gray-400 transition-colors">
+                <i class="fa-solid fa-list-check text-lg mb-1"></i>明細
+            </button>
+            <button id="nav-chart" class="nav-btn w-1/4 flex flex-col items-center p-2 text-gray-400 transition-colors">
+                <i class="fa-solid fa-chart-pie text-lg mb-1"></i>統計
+            </button>
+            <button id="nav-settings" class="nav-btn w-1/4 flex flex-col items-center p-2 text-gray-400 transition-colors">
+                <i class="fa-solid fa-gear text-lg mb-1"></i>設定
             </button>
         </nav>
 
@@ -160,29 +194,30 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- 頁面切換邏輯 ---
-        const btnHome = document.getElementById('nav-home');
-        const btnList = document.getElementById('nav-list');
-        const pageHome = document.getElementById('page-home');
-        const pageList = document.getElementById('page-list');
+        // --- 四個頁籤切換邏輯 ---
+        const tabs = [
+            { btn: document.getElementById('nav-home'), page: document.getElementById('page-home') },
+            { btn: document.getElementById('nav-list'), page: document.getElementById('page-list') },
+            { btn: document.getElementById('nav-chart'), page: document.getElementById('page-chart') },
+            { btn: document.getElementById('nav-settings'), page: document.getElementById('page-settings') }
+        ];
 
-        function switchPage(showPage, activeBtn, inactiveBtn) {
-            // 隱藏所有頁面
-            document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
-            // 顯示目標頁面
-            showPage.classList.add('active');
-            
-            // 更改按鈕顏色
-            activeBtn.classList.replace('text-gray-400', 'text-sakura');
-            activeBtn.classList.add('font-bold');
-            inactiveBtn.classList.replace('text-sakura', 'text-gray-400');
-            inactiveBtn.classList.remove('font-bold');
-            
-            window.scrollTo(0, 0); // 切換頁面時回到頂部
-        }
+        tabs.forEach(tab => {
+            tab.btn.addEventListener('click', () => {
+                // 重置所有按鈕和頁面
+                tabs.forEach(t => {
+                    t.page.classList.remove('active');
+                    t.btn.classList.remove('text-sakura', 'font-bold');
+                    t.btn.classList.add('text-gray-400');
+                });
+                // 啟動點擊的按鈕和頁面
+                tab.page.classList.add('active');
+                tab.btn.classList.remove('text-gray-400');
+                tab.btn.classList.add('text-sakura', 'font-bold');
+                window.scrollTo(0, 0);
+            });
+        });
 
-        btnHome.addEventListener('click', () => switchPage(pageHome, btnHome, btnList));
-        btnList.addEventListener('click', () => switchPage(pageList, btnList, btnHome));
         // ------------------
 
         // DOM 元素
@@ -211,8 +246,9 @@
                 if(exp.payer === '芝芝') chichiTotal += exp.amount;
                 if(exp.payer === '小T') littletTotal += exp.amount;
 
-                // 處理舊資料可能沒有分類或支付方式的問題
+                // 處理舊資料或空白資料
                 const cat = exp.category || '未分類';
+                const areaTag = exp.area && exp.area !== '不分區' ? `<span class="bg-babyblue/50 text-textMain px-2 py-0.5 rounded-full">${exp.area}</span>` : '';
                 const pay = exp.paymentMethod || '無';
                 const note = exp.notes ? `<p class="text-xs text-gray-500 mt-1 bg-gray-50 p-2 rounded-lg"><i class="fa-solid fa-comment-dots mr-1"></i>${exp.notes}</p>` : '';
 
@@ -226,9 +262,10 @@
                             </div>
                             <div>
                                 <p class="font-bold text-textMain">${exp.name}</p>
-                                <div class="text-xs text-gray-400 mt-1 space-x-2">
+                                <div class="text-xs text-gray-400 mt-1 flex flex-wrap gap-1 items-center">
                                     <span>${exp.date}</span>
                                     <span class="bg-mint/50 text-textMain px-2 py-0.5 rounded-full">${cat}</span>
+                                    ${areaTag}
                                     <span class="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">${pay}</span>
                                 </div>
                             </div>
@@ -253,6 +290,7 @@
             const name = document.getElementById('item-name').value;
             const payer = document.querySelector('input[name="payer"]:checked').value;
             const category = document.getElementById('category').value;
+            const area = document.getElementById('area').value; // 新增抓取區域
             const paymentMethod = document.getElementById('payment-method').value;
             const notes = document.getElementById('notes').value;
             
@@ -271,6 +309,7 @@
                     name: name,
                     payer: payer,
                     category: category,
+                    area: area, // 存入資料庫
                     paymentMethod: paymentMethod,
                     notes: notes,
                     date: dateStr,
@@ -284,8 +323,8 @@
                 submitBtn.innerText = originalText;
                 submitBtn.disabled = false;
                 
-                // 自動切換到明細清單頁看結果
-                switchPage(pageList, btnList, btnHome);
+                // 自動切換到明細清單頁看結果 (模擬點擊清單按鈕)
+                document.getElementById('nav-list').click();
 
             } catch (e) {
                 console.error("加入文件時發生錯誤: ", e);
