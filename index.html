@@ -128,7 +128,7 @@
                     </div>
 
                     <div id="store-custom-div" class="hidden">
-                        <input type="text" id="store-other-input" placeholder="請填寫店名或通路 (如: IKEA、特力屋)..."
+                        <input type="text" id="store-other-input" placeholder="請填寫店名或通路 (如: IKEA)..."
                                class="w-full p-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura text-sm">
                     </div>
 
@@ -154,7 +154,7 @@
                     </div>
 
                     <div id="payer-custom-div" class="hidden">
-                        <input type="text" id="payer-other-input" placeholder="請填寫付款人 (如：爸爸贊助、媽媽出資)"
+                        <input type="text" id="payer-other-input" placeholder="請填寫付款人 (如：媽媽贊助)"
                                class="w-full p-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura text-sm">
                     </div>
 
@@ -229,7 +229,6 @@
             <div id="no-chart-data" class="text-center py-20 text-gray-400 text-sm bg-white rounded-3xl p-5 border border-dashed border-gray-200">
                 <i class="fa-solid fa-chart-line text-5xl mb-3 text-mint/80"></i>
                 <p class="font-bold text-textMain">目前尚無記帳數據唷！</p>
-                <p class="text-xs text-gray-400 mt-1">只要在首頁記下一筆花費，<br>這裡就會自動生成精美的圓餅圖與 % 數佔比！</p>
             </div>
 
             <div id="has-chart-data" class="space-y-6 hidden">
@@ -302,13 +301,10 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 全域編輯狀態暫存器
         let editingId = null;
-
-        // 初始化日期選單預設值為「今天」
         document.getElementById('expense-date').value = new Date().toISOString().split('T')[0];
 
-        // --- 頁籤切換邏輯 (5頁籤) ---
+        // --- 頁籤切換邏輯 ---
         const tabs = [
             { btn: document.getElementById('nav-home'), page: document.getElementById('page-home') },
             { btn: document.getElementById('nav-list'), page: document.getElementById('page-list') },
@@ -331,7 +327,7 @@
             });
         });
 
-        // --- 表單欄位連動控制 (付款人 & 通路) ---
+        // --- 表單連動 ---
         const payerRadios = document.querySelectorAll('input[name="payer"]');
         const payerCustomDiv = document.getElementById('payer-custom-div');
         payerRadios.forEach(radio => {
@@ -430,7 +426,7 @@
             currentPhotoBase64 = null; photoInput.value = ''; photoPreview.classList.add('hidden');
         }
 
-        // --- 图表绘制核心 ---
+        // --- 圖表繪製 ---
         let chartInstances = {};
         function renderChart(canvasId, dataMap) {
             const canvas = document.getElementById(canvasId);
@@ -521,7 +517,8 @@
             document.getElementById('expense-date').value = new Date().toISOString().split('T')[0];
             payerCustomDiv.classList.add('hidden'); storeCustomDiv.classList.add('hidden');
             const submitBtn = document.getElementById('submit-btn');
-            submitBtn.innerText = '儲存花費'; submitBtn.classList.remove('bg-orange-400'); submitBtn.classList.add('bg-sakura');
+            submitBtn.innerText = '儲存花費'; submitBtn.disabled = false;
+            submitBtn.classList.remove('bg-orange-400'); submitBtn.classList.add('bg-sakura');
             document.getElementById('cancel-edit-btn').classList.add('hidden');
         };
 
@@ -531,7 +528,7 @@
             }
         };
 
-        // --- 記帳資料庫監聽主循環 ---
+        // --- 核心：即時同步監聽明細與圖表 ---
         const expensesRef = collection(db, "expenses");
         const q = query(expensesRef, orderBy("timestamp", "desc"));
 
@@ -572,7 +569,7 @@
                             <div>
                                 <p class="font-bold text-textMain">${exp.name}</p>
                                 <div class="text-xs text-gray-400 mt-1 flex flex-wrap gap-1 items-center">
-                                    <span>${exp.date}</span>
+                                    <span>${exp.date || '無日期'}</span>
                                     <span class="bg-mint/50 text-textMain px-2 py-0.5 rounded-full">${exp.category || '未分類'}</span>
                                     ${areaTag}
                                     ${storeTag}
@@ -594,7 +591,6 @@
             chichiPaidEl.innerText = `$${formatMoney(chichiTotal)}`;
             littletPaidEl.innerText = `$${formatMoney(littletTotal)}`;
 
-            // 控制圖表區塊的顯示/隱藏與繪製，防止空數據錯誤
             if (total === 0) {
                 document.getElementById('no-chart-data').classList.remove('hidden');
                 document.getElementById('has-chart-data').classList.add('hidden');
@@ -607,7 +603,7 @@
             }
         });
 
-        // --- 儲存與更新按鈕控制 ---
+        // --- 儲存表單控制 ---
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const amount = parseInt(document.getElementById('amount').value);
