@@ -426,14 +426,10 @@
             currentPhotoBase64 = null; photoInput.value = ''; photoPreview.classList.add('hidden');
         }
 
-        // --- 圖表繪繪製主機 ---
+        // --- 圖表繪製 ---
         let chartInstances = {};
         function renderChart(canvasId, dataMap) {
-            // ✨ 核心升級：加裝安全隔離牆，即使 Chart 套件加載稍慢也絕不崩潰
-            if (typeof Chart === 'undefined') {
-                console.warn("Chart.js 套件尚未就緒，略過圖表渲染。");
-                return;
-            }
+            if (typeof Chart === 'undefined') { return; }
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
@@ -538,6 +534,10 @@
         const q = query(expensesRef, orderBy("timestamp", "desc"));
 
         onSnapshot(q, (snapshot) => {
+            // ✨ 【自動吐真劑一號】只要網頁成功跟你的真實資料庫握手，就會立刻跳出這個視窗！
+            // 如果開起網頁沒看到這個彈窗，100% 代表你還在讀取打錯密碼的舊版快取！
+            alert("📊 【基地台連線成功】偵測到 Firebase 後台目前共有 " + snapshot.size + " 筆明細！網頁現在開始同步渲染！");
+
             listContainer.innerHTML = '';
             let total = 0; let chichiTotal = 0; let littletTotal = 0;
             let categoryData = {}; let areaData = {}; let payerData = {};
@@ -602,14 +602,15 @@
             } else {
                 document.getElementById('no-chart-data').classList.add('hidden');
                 document.getElementById('has-chart-data').classList.remove('hidden');
-                
-                // Safe execution wrapper for charts
                 try {
                     renderChart('chart-category', categoryData);
                     renderChart('chart-area', areaData);
                     renderChart('chart-payer', payerData);
-                } catch(err) { console.error("圖表生成失敗，但明細不受影響", err); }
+                } catch(err) { console.error(err); }
             }
+        }, (error) => {
+            // ✨ 【自動吐真劑二號】如果連線被拒絕，它會跳出真正的故障主因
+            alert("❌ Firebase 基地台連線失敗！主因：" + error.message);
         });
 
         // --- 儲存表單控制 ---
