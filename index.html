@@ -120,8 +120,25 @@
     </div>
 
     <script>
-        // 暫存資料的陣列 (後續可替換為 Firebase)
-        let expenses = [];
+<script type="module">
+        // 引入 Firebase 模組
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // 這是你專屬的 Firebase 金鑰
+        const firebaseConfig = {
+          apiKey: "AIzaSyDMlzCt1NyVtNnkmCT6i5dXy32nWl5mhWM",
+          authDomain: "new-house-24ecb.firebaseapp.com",
+          projectId: "new-house-24ecb",
+          storageBucket: "new-house-24ecb.firebasestorage.app",
+          messagingSenderId: "212198350832",
+          appId: "1:212198350832:web:722951ad61a042802b8735",
+          measurementId: "G-CRPMKV6RZG"
+        };
+
+        // 初始化 Firebase 與資料庫
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
         // DOM 元素
         const form = document.getElementById('expense-form');
@@ -133,26 +150,30 @@
         // 格式化金錢
         const formatMoney = (num) => new Intl.NumberFormat('zh-TW').format(num);
 
-        // 更新畫面與統計
-        function updateUI() {
-            // 清空列表
-            listContainer.innerHTML = '';
-            
+        // 即時監聽資料庫更新 (當有人新增花費，畫面會自動更新！)
+        const expensesRef = collection(db, "expenses");
+        const q = query(expensesRef, orderBy("timestamp", "desc")); // 照時間新到舊排序
+
+        onSnapshot(q, (snapshot) => {
+            listContainer.innerHTML = ''; // 清空列表
             let total = 0;
             let chichiTotal = 0;
             let littletTotal = 0;
 
-            // 渲染列表 (反轉陣列讓最新的在上面)
-            [...expenses].reverse().forEach(exp => {
+            snapshot.forEach((doc) => {
+                const exp = doc.data();
+                
+                // 計算總和
                 total += exp.amount;
                 if(exp.payer === '芝芝') chichiTotal += exp.amount;
                 if(exp.payer === '小T') littletTotal += exp.amount;
 
+                // 產生畫面 HTML
                 const item = document.createElement('div');
-                item.className = 'bg-white p-4 rounded-2xl shadow-sm flex justify-between items-center border border-gray-50';
+                item.className = 'bg-white p-4 rounded-2xl shadow-sm flex justify-between items-center border border-gray-50 mb-3';
                 item.innerHTML = `
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${exp.payer === '芝芝' ? 'bg-sakura text-white' : 'bg-babyblue text-textMain'}">
+                        <div class="w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-sm ${exp.payer === '芝芝' ? 'bg-sakura text-white' : 'bg-babyblue text-textMain'}">
                             ${exp.payer === '芝芝' ? '芝' : 'T'}
                         </div>
                         <div>
@@ -165,14 +186,14 @@
                 listContainer.appendChild(item);
             });
 
-            // 更新儀表板
+            // 更新儀表板數字
             totalEl.innerText = formatMoney(total);
             chichiPaidEl.innerText = `$${formatMoney(chichiTotal)}`;
             littletPaidEl.innerText = `$${formatMoney(littletTotal)}`;
-        }
+        });
 
-        // 處理表單送出
-        form.addEventListener('submit', (e) => {
+        // 處理表單送出 (存入 Firebase)
+        form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const amount = parseInt(document.getElementById('amount').value);
@@ -181,24 +202,25 @@
             const today = new Date();
             const dateStr = `${today.getMonth()+1}/${today.getDate()}`;
 
-            // 新增資料
-            expenses.push({ amount, name, payer, date: dateStr });
-            
-            // 這裡未來可以加入 Firebase 上傳的程式碼:
-            // db.collection("expenses").add({ amount, name, payer, date: dateStr })
-            
-            updateUI();
-            form.reset();
-            // 預設切回芝芝
-            document.querySelector('input[name="payer"][value="芝芝"]').checked = true;
+            // 將資料寫入 Firebase Firestore
+            try {
+                await addDoc(collection(db, "expenses"), {
+                    amount: amount,
+                    name: name,
+                    payer: payer,
+                    date: dateStr,
+                    timestamp: new Date() // 用來排序
+                });
+                
+                // 清空輸入框
+                form.reset();
+                document.querySelector('input[name="payer"][value="芝芝"]').checked = true;
+            } catch (e) {
+                console.error("加入文件時發生錯誤: ", e);
+                alert("儲存失敗，請確認 Firebase 資料庫已經建立並設為測試模式！");
+            }
         });
-
-        // 載入預設假資料看效果
-        expenses.push(
-            { amount: 50000, name: '訂金 - 系統櫃', payer: '小T', date: '6/8' },
-            { amount: 3500, name: '油漆耗材', payer: '芝芝', date: '6/9' }
-        );
-        updateUI();
+    </script>
     </script>
 </body>
 </html>
