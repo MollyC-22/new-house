@@ -78,7 +78,6 @@
                         <input type="number" id="amount" placeholder="輸入金額..." required
                                class="w-full text-2xl p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura text-center font-bold">
                     </div>
-                    
                     <div>
                         <input type="text" id="item-name" placeholder="例如：大金冷氣、沙發訂金..." required
                                class="w-full p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura">
@@ -258,7 +257,7 @@
             });
         });
 
-        // --- 自訂分類邏輯 (防死鎖升級版) ---
+        // --- 自訂分類邏輯 ---
         const categoryDocRef = doc(db, "settings", "appCategories");
         const defaultCategories = ["設計師裝潢費用", "家電", "軟裝", "裝飾類", "其他"];
 
@@ -290,7 +289,6 @@
             }
         });
 
-        // ✨ 升級點：使用 setDoc + merge 徹底解決 updateDoc 卡死在處理中的問題
         document.getElementById('add-category-btn').addEventListener('click', async () => {
             const input = document.getElementById('new-category-input');
             const val = input.value.trim();
@@ -301,12 +299,12 @@
                 btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 處理中...';
                 btn.disabled = true;
                 
-                // 強制覆蓋寫入，即使資料庫文件不存在也會秒建，絕對不卡住！
                 await setDoc(categoryDocRef, { list: arrayUnion(val) }, { merge: true });
                 input.value = '';
             } catch (e) {
                 console.error("新增失敗:", e);
-                alert("新增失敗！請確認 Firebase 的 Firestore Database 是否已開啟為「測試模式」喔！");
+                // ✨ 升級點：直接向芝芝吐出真正的錯誤代碼，不用再瞎猜！
+                alert("錯誤報告：\n" + e.message + "\n\n(如果顯示 permission-denied，代表後台規則剛開，請等1分鐘後用無痕視窗再試一次！)");
             } finally {
                 btn.innerHTML = '<i class="fa-solid fa-plus"></i> 新增';
                 btn.disabled = false;
@@ -437,7 +435,8 @@
                 submitBtn.innerText = '儲存花費'; submitBtn.disabled = false;
                 document.getElementById('nav-list').click();
             } catch (e) {
-                alert("儲存失敗！");
+                // ✨ 升級點：記帳失敗也改為吐出真實錯誤
+                alert("儲存失敗！原因：\n" + e.message);
                 form.querySelector('button[type="submit"]').disabled = false;
             }
         });
