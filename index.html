@@ -327,7 +327,7 @@
             });
         });
 
-        // --- 表單連動 ---
+        // --- 表單欄位連動控制 ---
         const payerRadios = document.querySelectorAll('input[name="payer"]');
         const payerCustomDiv = document.getElementById('payer-custom-div');
         payerRadios.forEach(radio => {
@@ -426,9 +426,14 @@
             currentPhotoBase64 = null; photoInput.value = ''; photoPreview.classList.add('hidden');
         }
 
-        // --- 圖表繪製 ---
+        // --- 圖表繪繪製主機 ---
         let chartInstances = {};
         function renderChart(canvasId, dataMap) {
+            // ✨ 核心升級：加裝安全隔離牆，即使 Chart 套件加載稍慢也絕不崩潰
+            if (typeof Chart === 'undefined') {
+                console.warn("Chart.js 套件尚未就緒，略過圖表渲染。");
+                return;
+            }
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
@@ -597,9 +602,13 @@
             } else {
                 document.getElementById('no-chart-data').classList.add('hidden');
                 document.getElementById('has-chart-data').classList.remove('hidden');
-                renderChart('chart-category', categoryData);
-                renderChart('chart-area', areaData);
-                renderChart('chart-payer', payerData);
+                
+                // Safe execution wrapper for charts
+                try {
+                    renderChart('chart-category', categoryData);
+                    renderChart('chart-area', areaData);
+                    renderChart('chart-payer', payerData);
+                } catch(err) { console.error("圖表生成失敗，但明細不受影響", err); }
             }
         });
 
