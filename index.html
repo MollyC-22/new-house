@@ -78,8 +78,9 @@
                         <input type="number" id="amount" placeholder="輸入金額..." required
                                class="w-full text-2xl p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura text-center font-bold">
                     </div>
+                    
                     <div>
-                        <input type="text" id="item-name" placeholder="例如：裝潢頭期款、大金冷氣..." required
+                        <input type="text" id="item-name" placeholder="例如：大金冷氣、沙發訂金..." required
                                class="w-full p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura">
                     </div>
 
@@ -121,17 +122,6 @@
                                 🙋‍♂️ 小T
                             </div>
                         </label>
-                    </div>
-
-                    <div>
-                        <input type="text" id="pdf-path" placeholder="報價單檔名 (選填，例如: quotation.pdf)"
-                               class="w-full p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura text-sm">
-                        <p class="text-[10px] text-gray-400 mt-1 pl-2">若有特定報價單，請先放進 GitHub 的 pdf/ 資料夾中喔！</p>
-                    </div>
-
-                    <div>
-                        <input type="text" id="notes" placeholder="新增備註 (選填)..."
-                               class="w-full p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura text-sm">
                     </div>
 
                     <div>
@@ -229,11 +219,10 @@
     </div>
 
     <script type="module">
-        // 修正點：統一改用與下方完全相容的全新 10.12.2 版本模組
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // 修正點：替換成你提供的官方 100% 正確金鑰 (修正了原本金鑰多一個英文字母 l 的手誤)
+        // 官方正確連線金鑰
         const firebaseConfig = {
           apiKey: "AIzaSyDM1zCt1NyVtNnkmCT6i5dXy32nWl5mhWM",
           authDomain: "new-house-24ecb.firebaseapp.com",
@@ -269,7 +258,7 @@
             });
         });
 
-        // --- 自訂分類邏輯 ---
+        // --- 自訂分類邏輯 (防死鎖升級版) ---
         const categoryDocRef = doc(db, "settings", "appCategories");
         const defaultCategories = ["設計師裝潢費用", "家電", "軟裝", "裝飾類", "其他"];
 
@@ -301,25 +290,24 @@
             }
         });
 
+        // ✨ 升級點：使用 setDoc + merge 徹底解決 updateDoc 卡死在處理中的問題
         document.getElementById('add-category-btn').addEventListener('click', async () => {
             const input = document.getElementById('new-category-input');
             const val = input.value.trim();
             if (!val) { alert("請先輸入分類名稱喔！"); return; }
             
+            const btn = document.getElementById('add-category-btn');
             try {
-                const btn = document.getElementById('add-category-btn');
                 btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 處理中...';
                 btn.disabled = true;
                 
-                await updateDoc(categoryDocRef, { list: arrayUnion(val) });
-                
+                // 強制覆蓋寫入，即使資料庫文件不存在也會秒建，絕對不卡住！
+                await setDoc(categoryDocRef, { list: arrayUnion(val) }, { merge: true });
                 input.value = '';
-                btn.innerHTML = '<i class="fa-solid fa-plus"></i> 新增';
-                btn.disabled = false;
             } catch (e) {
                 console.error("新增失敗:", e);
-                alert("新增失敗，請重試！");
-                const btn = document.getElementById('add-category-btn');
+                alert("新增失敗！請確認 Firebase 的 Firestore Database 是否已開啟為「測試模式」喔！");
+            } finally {
                 btn.innerHTML = '<i class="fa-solid fa-plus"></i> 新增';
                 btn.disabled = false;
             }
@@ -328,7 +316,7 @@
         window.deleteCategory = async function(cat) {
             if(confirm(`確定要刪除「${cat}」嗎？`)) {
                 try {
-                    await updateDoc(categoryDocRef, { list: arrayRemove(cat) });
+                    await setDoc(categoryDocRef, { list: arrayRemove(cat) }, { merge: true });
                 } catch (e) { console.error(e); }
             }
         }
@@ -393,14 +381,7 @@
                 const cat = exp.category || '未分類';
                 const areaTag = exp.area && exp.area !== '不分區' ? `<span class="bg-babyblue/50 text-textMain px-2 py-0.5 rounded-full">${exp.area}</span>` : '';
                 const pay = exp.paymentMethod || '無';
-                const note = exp.notes ? `<p class="text-xs text-gray-500 mt-2 bg-gray-50 p-2 rounded-lg"><i class="fa-solid fa-comment-dots mr-1"></i>${exp.notes}</p>` : '';
                 const photoHtml = exp.photo ? `<img src="${exp.photo}" class="mt-2 w-full h-32 object-cover rounded-xl border">` : '';
-                
-                const pdfHtml = exp.pdfPath ? `
-                    <a href="pdf/${exp.pdfPath}" target="_blank" class="mt-2 inline-flex items-center gap-1 text-xs bg-red-50 text-red-500 px-3 p-2 rounded-xl border border-red-100 font-bold btn-press">
-                        <i class="fa-solid fa-file-pdf"></i> 查看報價單 (${exp.pdfPath})
-                    </a>
-                ` : '';
 
                 const item = document.createElement('div');
                 item.className = 'bg-white p-4 rounded-2xl shadow-sm border border-gray-50';
@@ -423,8 +404,6 @@
                         <div class="font-bold text-lg text-sakura">$${formatMoney(exp.amount)}</div>
                     </div>
                     ${photoHtml}
-                    ${pdfHtml}
-                    ${note}
                 `;
                 listContainer.appendChild(item);
             });
@@ -442,8 +421,6 @@
             const category = document.getElementById('category').value;
             const area = document.getElementById('area').value; 
             const paymentMethod = document.getElementById('payment-method').value;
-            const pdfPath = document.getElementById('pdf-path').value.trim();
-            const notes = document.getElementById('notes').value;
             const today = new Date(); const dateStr = `${today.getMonth()+1}/${today.getDate()}`;
 
             try {
@@ -451,7 +428,7 @@
                 submitBtn.innerText = '儲存中...'; submitBtn.disabled = true;
 
                 await addDoc(collection(db, "expenses"), {
-                    amount, name, payer, category, area, paymentMethod, pdfPath, notes,
+                    amount, name, payer, category, area, paymentMethod,
                     photo: currentPhotoBase64, date: dateStr, timestamp: new Date()
                 });
                 
