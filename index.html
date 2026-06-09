@@ -157,13 +157,13 @@
         </main>
 
         <main id="page-settings" class="page-section px-5 pb-10 pt-5">
-            <h3 class="font-bold mb-4 pl-2"><i class="fa-solid fa-gear text-babyblue mr-2"></i>分類設定</h3>
+            <h3 class="font-bold mb-4 pl-2"><i class="fa-solid fa-gear text-babyblue mr-2"></i>設定</h3>
             
             <div class="bg-white p-5 rounded-3xl shadow-sm border-2 border-babyblue/30">
-                <p class="text-sm font-bold mb-3">自訂記帳分類選項</p>
+                <p class="text-sm font-bold mb-3">自訂記帳選項</p>
                 
                 <div class="flex gap-2 mb-4">
-                    <input type="text" id="new-category-input" placeholder="輸入新分類名稱..." class="flex-1 p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-babyblue text-sm font-bold">
+                    <input type="text" id="new-category-input" placeholder="輸入新名稱..." class="flex-1 p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-babyblue text-sm font-bold">
                     <button id="add-category-btn" class="bg-babyblue text-textMain px-4 py-2 rounded-2xl font-bold shadow-sm btn-press">
                         <i class="fa-solid fa-plus"></i> 新增
                     </button>
@@ -235,11 +235,11 @@
             alert('【報價單 AI 識別】\n\n這是一個預留的介面！因為串接真正的 AI 會暴露密碼，如果未來有寫後端伺服器就能正式啟用囉！');
         }
 
-        // --- 自訂分類資料庫邏輯 ---
+        // --- 自訂資料庫邏輯 ---
         const categoryDocRef = doc(db, "settings", "appCategories");
         const defaultCategories = ["設計師裝潢費用", "家電", "軟裝", "裝飾類", "其他"];
 
-        // 初始化：如果資料庫裡沒有分類設定，就寫入預設值
+        // 初始化：如果資料庫裡沒有設定，就寫入預設值
         async function initCategories() {
             const docSnap = await getDoc(categoryDocRef);
             if (!docSnap.exists()) {
@@ -248,7 +248,7 @@
         }
         initCategories();
 
-        // 監聽分類變更，同步更新首頁選單和設定頁列表
+        // 監聽變更，同步更新首頁選單和設定頁列表
         onSnapshot(categoryDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const cats = docSnap.data().list || [];
@@ -270,14 +270,37 @@
             }
         });
 
-        // 新增分類按鈕事件
+// 新增分類按鈕事件
         document.getElementById('add-category-btn').addEventListener('click', async () => {
             const input = document.getElementById('new-category-input');
             const val = input.value.trim();
-            if (val) {
-                // arrayUnion 會自動把新項目加進陣列 (如果沒有重複的話)
-                await updateDoc(categoryDocRef, { list: arrayUnion(val) });
+            
+            // 1. 防呆檢查：如果沒輸入文字就按新增
+            if (!val) {
+                alert("請先輸入想要新增的分類名稱喔！");
+                return;
+            }
+            
+            try {
+                // 2. 讓按鈕顯示處理中，給予視覺回饋
+                const btn = document.getElementById('add-category-btn');
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 處理中...';
+                btn.disabled = true;
+                
+                // 3. 安全寫入資料庫 (使用 setDoc + merge 避免文件不存在的錯誤)
+                await setDoc(categoryDocRef, { list: arrayUnion(val) }, { merge: true });
+                
+                // 4. 成功後清空輸入框並恢復按鈕
                 input.value = '';
+                btn.innerHTML = '<i class="fa-solid fa-plus"></i> 新增';
+                btn.disabled = false;
+                
+            } catch (e) {
+                console.error("新增分類發生錯誤: ", e);
+                alert("新增失敗，請重新整理網頁後再試一次！");
+                const btn = document.getElementById('add-category-btn');
+                btn.innerHTML = '<i class="fa-solid fa-plus"></i> 新增';
+                btn.disabled = false;
             }
         });
 
