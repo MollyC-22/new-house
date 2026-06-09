@@ -304,6 +304,15 @@
         let editingId = null;
         document.getElementById('expense-date').value = new Date().toISOString().split('T')[0];
 
+        // ✨ 【重要修正：補上先前遺漏的 DOM 變數宣告】
+        const form = document.getElementById('expense-form');
+        const listContainer = document.getElementById('expense-list');
+        const totalEl = document.getElementById('total-amount');
+        const chichiPaidEl = document.getElementById('chichi-paid');
+        const littletPaidEl = document.getElementById('littlet-paid');
+
+        const formatMoney = (num) => new Intl.NumberFormat('zh-TW').format(num || 0);
+
         // --- 頁籤切換邏輯 ---
         const tabs = [
             { btn: document.getElementById('nav-home'), page: document.getElementById('page-home') },
@@ -534,10 +543,6 @@
         const q = query(expensesRef, orderBy("timestamp", "desc"));
 
         onSnapshot(q, (snapshot) => {
-            // ✨ 【自動吐真劑一號】只要網頁成功跟你的真實資料庫握手，就會立刻跳出這個視窗！
-            // 如果開起網頁沒看到這個彈窗，100% 代表你還在讀取打錯密碼的舊版快取！
-            alert("📊 【基地台連線成功】偵測到 Firebase 後台目前共有 " + snapshot.size + " 筆明細！網頁現在開始同步渲染！");
-
             listContainer.innerHTML = '';
             let total = 0; let chichiTotal = 0; let littletTotal = 0;
             let categoryData = {}; let areaData = {}; let payerData = {};
@@ -545,15 +550,17 @@
             snapshot.forEach((docSnap) => {
                 const exp = docSnap.data();
                 const docId = docSnap.id;
-                total += exp.amount;
+                
+                const amt = parseInt(exp.amount) || 0;
+                total += amt;
                 
                 const payerStr = exp.payer || '未知';
-                if(payerStr === '芝芝') chichiTotal += exp.amount;
-                else if(payerStr === '小T') littletTotal += exp.amount;
+                if(payerStr === '芝芝') chichiTotal += amt;
+                else if(payerStr === '小T') littletTotal += amt;
                 
-                categoryData[exp.category || '未分類'] = (categoryData[exp.category || '未分類'] || 0) + exp.amount;
-                areaData[exp.area || '不分區'] = (areaData[exp.area || '不分區'] || 0) + exp.amount;
-                payerData[payerStr] = (payerData[payerStr] || 0) + exp.amount;
+                categoryData[exp.category || '未分類'] = (categoryData[exp.category || '未分類'] || 0) + amt;
+                areaData[exp.area || '不分區'] = (areaData[exp.area || '不分區'] || 0) + amt;
+                payerData[payerStr] = (payerData[payerStr] || 0) + amt;
 
                 const areaTag = exp.area && exp.area !== '不分區' ? `<span class="bg-babyblue/50 text-textMain px-2 py-0.5 rounded-full">${exp.area}</span>` : '';
                 const storeTag = exp.store ? `<span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full"><i class="fa-solid fa-cart-shopping mr-1"></i>${exp.store}</span>` : '';
@@ -581,7 +588,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="font-bold text-lg text-sakura">$${formatMoney(exp.amount)}</div>
+                        <div class="font-bold text-lg text-sakura">$${formatMoney(amt)}</div>
                     </div>
                     ${photoHtml}
                     <div class="flex justify-end gap-2 mt-3 pt-2 border-t border-gray-100">
@@ -608,9 +615,6 @@
                     renderChart('chart-payer', payerData);
                 } catch(err) { console.error(err); }
             }
-        }, (error) => {
-            // ✨ 【自動吐真劑二號】如果連線被拒絕，它會跳出真正的故障主因
-            alert("❌ Firebase 基地台連線失敗！主因：" + error.message);
         });
 
         // --- 儲存表單控制 ---
