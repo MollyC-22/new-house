@@ -72,7 +72,7 @@
                                class="w-full text-2xl p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura text-center font-bold">
                     </div>
                     <div>
-                        <input type="text" id="item-name" placeholder="例如：裝潢第一期、大金冷氣..." required
+                        <input type="text" id="item-name" placeholder="例如：水電工程第一期、大金冷氣..." required
                                class="w-full p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura">
                     </div>
 
@@ -117,18 +117,21 @@
                     </div>
 
                     <div>
+                        <input type="text" id="pdf-path" placeholder="報價單檔名 (選填，例如: quotation1.pdf)"
+                               class="w-full p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura text-sm">
+                        <p class="text-[10px] text-gray-400 mt-1 pl-2">請先將報價單放進 GitHub 的 pdf/ 資料夾中喔！</p>
+                    </div>
+
+                    <div>
                         <input type="text" id="notes" placeholder="新增備註 (選填)..."
                                class="w-full p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura text-sm">
                     </div>
 
-                    <div class="flex gap-2">
-                        <label class="flex-1 p-3 border-2 border-dashed border-mint text-mint rounded-2xl font-bold flex justify-center items-center gap-2 cursor-pointer btn-press text-sm text-center">
+                    <div>
+                        <label class="w-full p-3 border-2 border-dashed border-mint text-mint rounded-2xl font-bold flex justify-center items-center gap-2 cursor-pointer btn-press text-sm text-center bg-white">
                             <input type="file" id="photo-upload" accept="image/*" class="hidden">
-                            <i class="fa-solid fa-image"></i> 商品照片
+                            <i class="fa-solid fa-camera"></i> 上傳商品或單據照片
                         </label>
-                        <button type="button" onclick="mockOCR()" class="flex-1 p-3 border-2 border-dashed border-babyblue text-babyblue rounded-2xl font-bold flex justify-center items-center gap-2 btn-press text-sm text-center">
-                            <i class="fa-solid fa-file-invoice"></i> 報價單識別
-                        </button>
                     </div>
 
                     <div id="photo-preview" class="hidden relative mt-2">
@@ -150,17 +153,60 @@
             <div id="expense-list" class="space-y-3"></div>
         </main>
 
-        <main id="page-chart" class="page-section px-5 pb-10 text-center pt-20">
-            <i class="fa-solid fa-folder-open text-6xl text-mint mb-4"></i>
-            <h3 class="font-bold text-xl mb-2 text-textMain">裝潢圖面與檔案庫</h3>
-            <p class="text-gray-400 text-sm">即將開放！未來可以把 PDF 報價單、<br>格局圖跟水電圖上傳到這裡集中管理。</p>
+        <main id="page-chart" class="page-section px-5 pb-10 space-y-4">
+            <h3 class="font-bold pl-2 mb-2"><i class="fa-solid fa-folder-open text-mint mr-2"></i>新家核心 PDF 圖面庫</h3>
+            
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-2xl bg-sakura/20 text-sakura flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-map"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold text-sm text-textMain">原始格局 / 平面配置圖</p>
+                        <p class="text-[11px] text-gray-400">檔名: pdf/layout.pdf</p>
+                    </div>
+                </div>
+                <a href="pdf/layout.pdf" target="_blank" class="bg-sakura text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm btn-press">
+                    <i class="fa-solid fa-file-pdf mr-1"></i>開啟
+                </a>
+            </div>
+
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-2xl bg-mint/50 text-textMain flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold text-sm text-textMain">開關水電配置圖面</p>
+                        <p class="text-[11px] text-gray-400">檔名: pdf/water-electric.pdf</p>
+                    </div>
+                </div>
+                <a href="pdf/water-electric.pdf" target="_blank" class="bg-mint text-textMain px-4 py-2 rounded-xl text-xs font-bold shadow-sm btn-press">
+                    <i class="fa-solid fa-file-pdf mr-1"></i>開啟
+                </a>
+            </div>
+
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-2xl bg-babyblue/50 text-textMain flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-snowflake"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold text-sm text-textMain">冷氣管線與天花配置圖</p>
+                        <p class="text-[11px] text-gray-400">檔名: pdf/ac.pdf</p>
+                    </div>
+                </div>
+                <a href="pdf/ac.pdf" target="_blank" class="bg-babyblue text-textMain px-4 py-2 rounded-xl text-xs font-bold shadow-sm btn-press">
+                    <i class="fa-solid fa-file-pdf mr-1"></i>開啟
+                </a>
+            </div>
         </main>
 
         <main id="page-settings" class="page-section px-5 pb-10 pt-5">
             <h3 class="font-bold mb-4 pl-2"><i class="fa-solid fa-gear text-babyblue mr-2"></i>設定</h3>
             
             <div class="bg-white p-5 rounded-3xl shadow-sm border-2 border-babyblue/30">
-                <p class="text-sm font-bold mb-3">自訂記帳選項</p>
+                <p class="text-sm font-bold mb-3">自訂記帳分類</p>
                 
                 <div class="flex gap-2 mb-4">
                     <input type="text" id="new-category-input" placeholder="輸入新名稱..." class="flex-1 p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-babyblue text-sm font-bold">
@@ -169,8 +215,7 @@
                     </button>
                 </div>
 
-                <div id="category-settings-list" class="space-y-2">
-                    </div>
+                <div id="category-settings-list" class="space-y-2"></div>
             </div>
         </main>
 
@@ -182,7 +227,7 @@
                 <i class="fa-solid fa-list-check text-lg mb-1"></i>明細
             </button>
             <button id="nav-chart" class="nav-btn w-1/4 flex flex-col items-center p-2 text-gray-400 transition-colors">
-                <i class="fa-solid fa-folder text-lg mb-1"></i>圖庫
+                <i class="fa-solid fa-folder-open text-lg mb-1"></i>圖庫
             </button>
             <button id="nav-settings" class="nav-btn w-1/4 flex flex-col items-center p-2 text-gray-400 transition-colors">
                 <i class="fa-solid fa-gear text-lg mb-1"></i>設定
@@ -192,10 +237,8 @@
     </div>
 
     <script type="module">
-        // 統一使用 10.12.2 版本，並引入了 Storage 功能
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
         const firebaseConfig = {
           apiKey: "AIzaSyDMlzCt1NyVtNnkmCT6i5dXy32nWl5mhWM",
@@ -209,8 +252,6 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        // 初始化 Storage 服務 (為了未來的圖庫做準備)
-        const storage = getStorage(app); 
 
         // --- 頁籤切換邏輯 ---
         const tabs = [
@@ -234,10 +275,6 @@
             });
         });
 
-        window.mockOCR = function() {
-            alert('【報價單 AI 識別】\n\n這是一個預留的介面！因為串接真正的 AI 會暴露密碼，如果未來有寫後端伺服器就能正式啟用囉！');
-        }
-
         // --- 自訂分類邏輯 ---
         const categoryDocRef = doc(db, "settings", "appCategories");
         const defaultCategories = ["設計師裝潢費用", "家電", "軟裝", "裝飾類", "其他"];
@@ -248,16 +285,13 @@
                 if (!docSnap.exists()) {
                     await setDoc(categoryDocRef, { list: defaultCategories });
                 }
-            } catch (e) {
-                console.error("初始化分類失敗:", e);
-            }
+            } catch (e) { console.error(e); }
         }
         initCategories();
 
         onSnapshot(categoryDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const cats = docSnap.data().list || [];
-                
                 const catSelect = document.getElementById('category');
                 catSelect.innerHTML = cats.map(c => `<option value="${c}">📌 ${c}</option>`).join('');
 
@@ -276,39 +310,29 @@
         document.getElementById('add-category-btn').addEventListener('click', async () => {
             const input = document.getElementById('new-category-input');
             const val = input.value.trim();
-            
-            if (!val) {
-                alert("請先輸入想要新增的分類名稱喔！");
-                return;
-            }
+            if (!val) { alert("請先輸入分類名稱喔！"); return; }
             
             try {
                 const btn = document.getElementById('add-category-btn');
-                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 處理中...';
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>...';
                 btn.disabled = true;
-                
                 await setDoc(categoryDocRef, { list: arrayUnion(val) }, { merge: true });
-                
                 input.value = '';
                 btn.innerHTML = '<i class="fa-solid fa-plus"></i> 新增';
                 btn.disabled = false;
-                
             } catch (e) {
-                console.error("新增分類發生錯誤: ", e);
-                alert("新增失敗，請重新整理網頁後再試一次！");
-                const btn = document.getElementById('add-category-btn');
-                btn.innerHTML = '<i class="fa-solid fa-plus"></i> 新增';
-                btn.disabled = false;
+                alert("新增失敗！");
+                document.getElementById('add-category-btn').disabled = false;
             }
         });
 
         window.deleteCategory = async function(cat) {
-            if(confirm(`確定要刪除「${cat}」這個分類嗎？\n(注意：這不會刪除過去已經記下的帳目)`)) {
+            if(confirm(`確定要刪除「${cat}」嗎？`)) {
                 await updateDoc(categoryDocRef, { list: arrayRemove(cat) });
             }
         }
 
-        // --- 照片壓縮與預覽 ---
+        // --- 照片壓縮處理 ---
         let currentPhotoBase64 = null;
         const photoInput = document.getElementById('photo-upload');
         const photoPreview = document.getElementById('photo-preview');
@@ -317,27 +341,18 @@
         photoInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if(!file) return;
-            
             const reader = new FileReader();
             reader.onload = function(event) {
                 const img = new Image();
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
                     const MAX_WIDTH = 500; 
-                    let width = img.width;
-                    let height = img.height;
-                    
-                    if (width > MAX_WIDTH) {
-                        height = height * (MAX_WIDTH / width);
-                        width = MAX_WIDTH;
-                    }
-                    
-                    canvas.width = width;
-                    canvas.height = height;
+                    let width = img.width; let height = img.height;
+                    if (width > MAX_WIDTH) { height = height * (MAX_WIDTH / width); width = MAX_WIDTH; }
+                    canvas.width = width; canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
-                    
-                    currentPhotoBase64 = canvas.toDataURL('image/jpeg', 0.7); 
+                    currentPhotoBase64 = canvas.toDataURL('image/jpeg', 0.6); 
                     photoPreviewImg.src = currentPhotoBase64;
                     photoPreview.classList.remove('hidden');
                 }
@@ -352,7 +367,7 @@
             photoPreview.classList.add('hidden');
         }
 
-        // --- 記帳主邏輯 ---
+        // --- 記帳資料庫連線 ---
         const form = document.getElementById('expense-form');
         const listContainer = document.getElementById('expense-list');
         const totalEl = document.getElementById('total-amount');
@@ -366,13 +381,10 @@
 
         onSnapshot(q, (snapshot) => {
             listContainer.innerHTML = '';
-            let total = 0;
-            let chichiTotal = 0;
-            let littletTotal = 0;
+            let total = 0; let chichiTotal = 0; let littletTotal = 0;
 
             snapshot.forEach((doc) => {
                 const exp = doc.data();
-                
                 total += exp.amount;
                 if(exp.payer === '芝芝') chichiTotal += exp.amount;
                 if(exp.payer === '小T') littletTotal += exp.amount;
@@ -381,7 +393,14 @@
                 const areaTag = exp.area && exp.area !== '不分區' ? `<span class="bg-babyblue/50 text-textMain px-2 py-0.5 rounded-full">${exp.area}</span>` : '';
                 const pay = exp.paymentMethod || '無';
                 const note = exp.notes ? `<p class="text-xs text-gray-500 mt-2 bg-gray-50 p-2 rounded-lg"><i class="fa-solid fa-comment-dots mr-1"></i>${exp.notes}</p>` : '';
-                const photoHtml = exp.photo ? `<img src="${exp.photo}" class="mt-2 w-full h-32 object-cover rounded-xl border border-gray-100">` : '';
+                const photoHtml = exp.photo ? `<img src="${exp.photo}" class="mt-2 w-full h-32 object-cover rounded-xl border">` : '';
+                
+                // PDF 報價單按鈕
+                const pdfHtml = exp.pdfPath ? `
+                    <a href="pdf/${exp.pdfPath}" target="_blank" class="mt-2 inline-flex items-center gap-1 text-xs bg-red-50 text-red-500 px-3 p-2 rounded-xl border border-red-100 font-bold btn-press">
+                        <i class="fa-solid fa-file-pdf"></i> 查看報價單 (${exp.pdfPath})
+                    </a>
+                ` : '';
 
                 const item = document.createElement('div');
                 item.className = 'bg-white p-4 rounded-2xl shadow-sm border border-gray-50';
@@ -404,6 +423,7 @@
                         <div class="font-bold text-lg text-sakura">$${formatMoney(exp.amount)}</div>
                     </div>
                     ${photoHtml}
+                    ${pdfHtml}
                     ${note}
                 `;
                 listContainer.appendChild(item);
@@ -416,49 +436,31 @@
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const amount = parseInt(document.getElementById('amount').value);
             const name = document.getElementById('item-name').value;
             const payer = document.querySelector('input[name="payer"]:checked').value;
             const category = document.getElementById('category').value;
             const area = document.getElementById('area').value; 
             const paymentMethod = document.getElementById('payment-method').value;
+            const pdfPath = document.getElementById('pdf-path').value.trim();
             const notes = document.getElementById('notes').value;
-            
-            const today = new Date();
-            const dateStr = `${today.getMonth()+1}/${today.getDate()}`;
+            const today = new Date(); const dateStr = `${today.getMonth()+1}/${today.getDate()}`;
 
             try {
                 const submitBtn = form.querySelector('button[type="submit"]');
-                const originalText = submitBtn.innerText;
-                submitBtn.innerText = '儲存中...';
-                submitBtn.disabled = true;
+                submitBtn.innerText = '儲存中...'; submitBtn.disabled = true;
 
                 await addDoc(collection(db, "expenses"), {
-                    amount: amount,
-                    name: name,
-                    payer: payer,
-                    category: category,
-                    area: area, 
-                    paymentMethod: paymentMethod,
-                    notes: notes,
-                    photo: currentPhotoBase64,
-                    date: dateStr,
-                    timestamp: new Date()
+                    amount, name, payer, category, area, paymentMethod, pdfPath, notes,
+                    photo: currentPhotoBase64, date: dateStr, timestamp: new Date()
                 });
                 
-                form.reset();
-                removePhoto();
+                form.reset(); removePhoto();
                 document.querySelector('input[name="payer"][value="芝芝"]').checked = true;
-                
-                submitBtn.innerText = originalText;
-                submitBtn.disabled = false;
-                
+                submitBtn.innerText = '儲存花費'; submitBtn.disabled = false;
                 document.getElementById('nav-list').click();
-
             } catch (e) {
-                console.error("加入文件時發生錯誤: ", e);
-                alert("儲存失敗，請檢查網路狀態！");
+                alert("儲存失敗！");
                 form.querySelector('button[type="submit"]').disabled = false;
             }
         });
