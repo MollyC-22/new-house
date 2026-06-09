@@ -129,3 +129,269 @@
                     <div class="flex gap-2">
                         <label class="flex-1 p-3 border-2 border-dashed border-mint text-mint rounded-2xl font-bold flex justify-center items-center gap-2 cursor-pointer btn-press text-sm text-center">
                             <input type="file" id="photo-upload" accept="image/*" class="hidden">
+                            <i class="fa-solid fa-image"></i> 商品照片
+                        </label>
+                        <button type="button" onclick="mockOCR()" class="flex-1 p-3 border-2 border-dashed border-babyblue text-babyblue rounded-2xl font-bold flex justify-center items-center gap-2 btn-press text-sm text-center">
+                            <i class="fa-solid fa-file-invoice"></i> 報價單識別
+                        </button>
+                    </div>
+
+                    <div id="photo-preview" class="hidden relative mt-2">
+                        <img id="photo-preview-img" src="" class="w-full h-40 object-cover rounded-2xl border-2 border-mint/30 shadow-sm">
+                        <button type="button" onclick="removePhoto()" class="absolute top-2 right-2 bg-white rounded-full w-8 h-8 flex items-center justify-center text-gray-500 shadow-md">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <button type="submit" class="w-full p-4 bg-sakura text-white rounded-2xl font-bold text-lg shadow-md btn-press mt-2">
+                        儲存花費
+                    </button>
+                </form>
+            </section>
+        </main>
+
+        <main id="page-list" class="page-section px-5 pb-10">
+            <h3 class="font-bold mb-4 pl-2"><i class="fa-solid fa-list-ul text-sakura mr-2"></i>所有明細</h3>
+            <div id="expense-list" class="space-y-3">
+                </div>
+        </main>
+
+        <main id="page-chart" class="page-section px-5 pb-10 text-center pt-20">
+            <i class="fa-solid fa-person-digging text-6xl text-mint mb-4"></i>
+            <h3 class="font-bold text-xl mb-2 text-textMain">統計圖表施工中</h3>
+            <p class="text-gray-400 text-sm">未來可以在這裡看各區域、各工種的花費圓餅圖喔！</p>
+        </main>
+
+        <main id="page-settings" class="page-section px-5 pb-10 text-center pt-20">
+            <i class="fa-solid fa-gear text-6xl text-babyblue mb-4"></i>
+            <h3 class="font-bold text-xl mb-2 text-textMain">設定頁施工中</h3>
+            <p class="text-gray-400 text-sm">未來可以在這裡設定預算上限或匯出 Excel 表格！</p>
+        </main>
+
+        <nav class="fixed bottom-0 w-full max-w-md bg-white border-t border-gray-100 pb-safe pt-2 px-2 flex justify-around items-center text-[10px] shadow-[0_-10px_20px_rgba(0,0,0,0.03)] rounded-t-3xl z-20">
+            <button id="nav-home" class="nav-btn w-1/4 flex flex-col items-center p-2 text-sakura font-bold transition-colors">
+                <i class="fa-solid fa-house text-lg mb-1"></i>首頁
+            </button>
+            <button id="nav-list" class="nav-btn w-1/4 flex flex-col items-center p-2 text-gray-400 transition-colors">
+                <i class="fa-solid fa-list-check text-lg mb-1"></i>明細
+            </button>
+            <button id="nav-chart" class="nav-btn w-1/4 flex flex-col items-center p-2 text-gray-400 transition-colors">
+                <i class="fa-solid fa-chart-pie text-lg mb-1"></i>統計
+            </button>
+            <button id="nav-settings" class="nav-btn w-1/4 flex flex-col items-center p-2 text-gray-400 transition-colors">
+                <i class="fa-solid fa-gear text-lg mb-1"></i>設定
+            </button>
+        </nav>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // 你的專屬金鑰
+        const firebaseConfig = {
+          apiKey: "AIzaSyDMlzCt1NyVtNnkmCT6i5dXy32nWl5mhWM",
+          authDomain: "new-house-24ecb.firebaseapp.com",
+          projectId: "new-house-24ecb",
+          storageBucket: "new-house-24ecb.firebasestorage.app",
+          messagingSenderId: "212198350832",
+          appId: "1:212198350832:web:722951ad61a042802b8735",
+          measurementId: "G-CRPMKV6RZG"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- 頁籤切換邏輯 ---
+        const tabs = [
+            { btn: document.getElementById('nav-home'), page: document.getElementById('page-home') },
+            { btn: document.getElementById('nav-list'), page: document.getElementById('page-list') },
+            { btn: document.getElementById('nav-chart'), page: document.getElementById('page-chart') },
+            { btn: document.getElementById('nav-settings'), page: document.getElementById('page-settings') }
+        ];
+
+        tabs.forEach(tab => {
+            tab.btn.addEventListener('click', () => {
+                tabs.forEach(t => {
+                    t.page.classList.remove('active');
+                    t.btn.classList.remove('text-sakura', 'font-bold');
+                    t.btn.classList.add('text-gray-400');
+                });
+                tab.page.classList.add('active');
+                tab.btn.classList.remove('text-gray-400');
+                tab.btn.classList.add('text-sakura', 'font-bold');
+                window.scrollTo(0, 0);
+            });
+        });
+
+        // --- 報價單 AI 模擬提示 ---
+        window.mockOCR = function() {
+            alert('【報價單 AI 識別】\n\n這是一個預留的介面！因為要串接真正的 AI (像是 ChatGPT Vision) 需要保護 API 密碼，不能直接暴露在網頁程式碼裡。未來若專案擴充後端伺服器，就可以讓它幫你自動讀取圖片填寫金額囉！');
+        }
+
+        // --- 照片上傳與壓縮處理 ---
+        let currentPhotoBase64 = null;
+        const photoInput = document.getElementById('photo-upload');
+        const photoPreview = document.getElementById('photo-preview');
+        const photoPreviewImg = document.getElementById('photo-preview-img');
+
+        photoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    // 使用 Canvas 壓縮圖片，避免塞爆資料庫
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 500; // 壓縮後的最大寬度
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > MAX_WIDTH) {
+                        height = height * (MAX_WIDTH / width);
+                        width = MAX_WIDTH;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // 轉成 Base64 字串 (品質 0.7)
+                    currentPhotoBase64 = canvas.toDataURL('image/jpeg', 0.7); 
+                    photoPreviewImg.src = currentPhotoBase64;
+                    photoPreview.classList.remove('hidden');
+                }
+                img.src = event.target.result;
+            }
+            reader.readAsDataURL(file);
+        });
+
+        window.removePhoto = function() {
+            currentPhotoBase64 = null;
+            photoInput.value = '';
+            photoPreview.classList.add('hidden');
+        }
+
+        // DOM 元素
+        const form = document.getElementById('expense-form');
+        const listContainer = document.getElementById('expense-list');
+        const totalEl = document.getElementById('total-amount');
+        const chichiPaidEl = document.getElementById('chichi-paid');
+        const littletPaidEl = document.getElementById('littlet-paid');
+
+        const formatMoney = (num) => new Intl.NumberFormat('zh-TW').format(num);
+
+        // 即時監聽資料庫
+        const expensesRef = collection(db, "expenses");
+        const q = query(expensesRef, orderBy("timestamp", "desc"));
+
+        onSnapshot(q, (snapshot) => {
+            listContainer.innerHTML = '';
+            let total = 0;
+            let chichiTotal = 0;
+            let littletTotal = 0;
+
+            snapshot.forEach((doc) => {
+                const exp = doc.data();
+                
+                total += exp.amount;
+                if(exp.payer === '芝芝') chichiTotal += exp.amount;
+                if(exp.payer === '小T') littletTotal += exp.amount;
+
+                const cat = exp.category || '未分類';
+                const areaTag = exp.area && exp.area !== '不分區' ? `<span class="bg-babyblue/50 text-textMain px-2 py-0.5 rounded-full">${exp.area}</span>` : '';
+                const pay = exp.paymentMethod || '無';
+                const note = exp.notes ? `<p class="text-xs text-gray-500 mt-2 bg-gray-50 p-2 rounded-lg"><i class="fa-solid fa-comment-dots mr-1"></i>${exp.notes}</p>` : '';
+                const photoHtml = exp.photo ? `<img src="${exp.photo}" class="mt-2 w-full h-32 object-cover rounded-xl border border-gray-100">` : '';
+
+                const item = document.createElement('div');
+                item.className = 'bg-white p-4 rounded-2xl shadow-sm border border-gray-50';
+                item.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-sm ${exp.payer === '芝芝' ? 'bg-sakura text-white' : 'bg-babyblue text-textMain'}">
+                                ${exp.payer === '芝芝' ? '芝' : 'T'}
+                            </div>
+                            <div>
+                                <p class="font-bold text-textMain">${exp.name}</p>
+                                <div class="text-xs text-gray-400 mt-1 flex flex-wrap gap-1 items-center">
+                                    <span>${exp.date}</span>
+                                    <span class="bg-mint/50 text-textMain px-2 py-0.5 rounded-full">${cat}</span>
+                                    ${areaTag}
+                                    <span class="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">${pay}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="font-bold text-lg text-sakura">$${formatMoney(exp.amount)}</div>
+                    </div>
+                    ${photoHtml}
+                    ${note}
+                `;
+                listContainer.appendChild(item);
+            });
+
+            totalEl.innerText = formatMoney(total);
+            chichiPaidEl.innerText = `$${formatMoney(chichiTotal)}`;
+            littletPaidEl.innerText = `$${formatMoney(littletTotal)}`;
+        });
+
+        // 處理表單送出
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const amount = parseInt(document.getElementById('amount').value);
+            const name = document.getElementById('item-name').value;
+            const payer = document.querySelector('input[name="payer"]:checked').value;
+            const category = document.getElementById('category').value;
+            const area = document.getElementById('area').value; 
+            const paymentMethod = document.getElementById('payment-method').value;
+            const notes = document.getElementById('notes').value;
+            
+            const today = new Date();
+            const dateStr = `${today.getMonth()+1}/${today.getDate()}`;
+
+            try {
+                // 送出按鈕顯示載入中
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerText;
+                submitBtn.innerText = '儲存中...';
+                submitBtn.disabled = true;
+
+                await addDoc(collection(db, "expenses"), {
+                    amount: amount,
+                    name: name,
+                    payer: payer,
+                    category: category,
+                    area: area, 
+                    paymentMethod: paymentMethod,
+                    notes: notes,
+                    photo: currentPhotoBase64, // 存入壓縮後的照片資料
+                    date: dateStr,
+                    timestamp: new Date()
+                });
+                
+                // 重置表單與照片
+                form.reset();
+                removePhoto();
+                document.querySelector('input[name="payer"][value="芝芝"]').checked = true;
+                
+                // 恢復按鈕狀態
+                submitBtn.innerText = originalText;
+                submitBtn.disabled = false;
+                
+                // 自動切換到明細清單頁看結果
+                document.getElementById('nav-list').click();
+
+            } catch (e) {
+                console.error("加入文件時發生錯誤: ", e);
+                alert("儲存失敗，請檢查網路狀態！");
+                form.querySelector('button[type="submit"]').disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
