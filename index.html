@@ -59,7 +59,6 @@
         <!-- ================= 1. 首頁區塊 (記帳) ================= -->
         <main id="page-home" class="page-section active px-5 space-y-6">
             
-            <!-- 總花費 Dashboard -->
             <section class="bg-white p-5 rounded-3xl shadow-[0_4px_15px_rgba(255,183,178,0.2)] border-2 border-sakura/20">
                 <p class="text-sm text-center mb-1">目前總花費</p>
                 <h2 class="text-4xl font-bold text-center text-sakura mb-4">$<span id="total-amount">0</span></h2>
@@ -76,7 +75,6 @@
                 </div>
             </section>
 
-            <!-- 記帳表單 -->
             <section class="bg-white p-5 rounded-3xl shadow-sm border-2 border-mint/30">
                 <h3 class="font-bold mb-4"><i class="fa-solid fa-pen text-mint mr-2"></i>記一筆</h3>
                 
@@ -99,7 +97,6 @@
 
                     <div class="grid grid-cols-2 gap-2">
                         <select id="category" class="w-full p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura text-sm font-bold text-textMain">
-                            <!-- 選單將透過 JS 自動注入 -->
                             <option value="">載入中...</option>
                         </select>
                         <select id="area" class="w-full p-3 bg-paper rounded-2xl focus:outline-none focus:ring-2 focus:ring-sakura text-sm font-bold text-textMain">
@@ -200,6 +197,21 @@
         <main id="page-folder" class="page-section px-5 pb-10 space-y-4">
             <h3 class="font-bold pl-2 mb-2"><i class="fa-solid fa-folder-open text-mint mr-2"></i>新家核心 PDF 檔案庫</h3>
             
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-2xl bg-babyblue/50 text-textMain flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-compass-drafting"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold text-sm text-textMain">全室施工圖面</p>
+                        <p class="text-[11px] text-gray-400">檔名: pdf/construction.pdf</p>
+                    </div>
+                </div>
+                <a href="pdf/construction.pdf" target="_blank" class="bg-babyblue text-textMain px-4 py-2 rounded-xl text-xs font-bold shadow-sm btn-press">
+                    <i class="fa-solid fa-file-pdf mr-1"></i>開啟
+                </a>
+            </div>
+
             <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div class="w-12 h-12 rounded-2xl bg-mint/50 text-textMain flex items-center justify-center text-xl">
@@ -364,14 +376,13 @@
             else storeCustomDiv.classList.add('hidden');
         });
 
-        // --- ✨ 自訂分類邏輯 (自動救援升級版) ---
+        // --- ✨ 回歸初心：使用你們原本的專屬分類 ---
         const categoryDocRef = doc(db, "settings", "appCategories");
         const defaultCategories = ["設計師裝潢費用", "家電", "軟裝", "裝飾類", "其他"];
 
         async function initCategories() {
             try {
                 const docSnap = await getDoc(categoryDocRef);
-                // 防呆升級：如果找不到檔案，或是檔案裡面的分類「被刪光光(長度為0)」了，就強制幫你長出預設分類！
                 if (!docSnap.exists() || !docSnap.data().list || docSnap.data().list.length === 0) {
                     await setDoc(categoryDocRef, { list: defaultCategories }, { merge: true });
                 }
@@ -380,20 +391,17 @@
         initCategories();
 
         onSnapshot(categoryDocRef, (docSnap) => {
-            let cats = defaultCategories; // 先準備好備用方案
+            let cats = defaultCategories; 
             
             if (docSnap.exists() && docSnap.data().list && docSnap.data().list.length > 0) {
-                cats = docSnap.data().list; // 如果資料庫有東西，就用資料庫的
+                cats = docSnap.data().list; 
             } else {
-                // 如果抓下來發現是空的，立刻觸發救援寫回資料庫
                 setDoc(categoryDocRef, { list: defaultCategories }, { merge: true });
             }
 
-            // 畫出選單
             const catSelect = document.getElementById('category');
             catSelect.innerHTML = cats.map(c => `<option value="${c}">📌 ${c}</option>`).join('');
 
-            // 畫出設定頁的清單
             const catSetList = document.getElementById('category-settings-list');
             catSetList.innerHTML = cats.map(c => `
                 <div class="flex justify-between items-center bg-paper p-3 rounded-2xl text-sm font-bold border border-gray-100 shadow-sm">
