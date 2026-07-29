@@ -53,7 +53,7 @@
     <div class="max-w-md mx-auto min-h-screen relative app-container shadow-sm bg-paper">
         
         <header class="p-5 text-center sticky top-0 bg-paper/90 backdrop-blur-sm z-10">
-            <h1 class="text-xl font-bold text-textMain"><i class="fa-solid fa-house-chimney text-sakura mr-2"></i>我們的裝潢日記</h1>
+            <h1 class="text-xl font-bold text-textMain"><i class="fa-solid fa-house-chimney text-sakura mr-2"></i>我們的裝潢日記 (單機版)</h1>
         </header>
 
         <!-- ================= 1. 首頁區塊 (記帳) ================= -->
@@ -307,32 +307,18 @@
 
     </div>
 
-    <!-- 互動邏輯與 Firebase 連線 -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, setDoc, getDoc, updateDoc, arrayUnion, arrayRemove, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-        const firebaseConfig = {
-          apiKey: "AIzaSyDM1zCt1NyVtNnkmCT6i5dXy32nWl5mhWM",
-          authDomain: "new-house-24ecb.firebaseapp.com",
-          projectId: "new-house-24ecb",
-          storageBucket: "new-house-24ecb.firebasestorage.app",
-          messagingSenderId: "212198350832",
-          appId: "1:212198350832:web:722951ad61a042802b8735",
-          measurementId: "G-CRPMKV6RZG"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        let editingId = null;
-        document.getElementById('expense-date').value = new Date().toISOString().split('T')[0];
-
+    <!-- ✨ 核心：純單機版 JavaScript (拔除所有 Firebase) ✨ -->
+    <script>
+        // 取得介面元素
         const form = document.getElementById('expense-form');
         const listContainer = document.getElementById('expense-list');
         const totalEl = document.getElementById('total-amount');
         const chichiPaidEl = document.getElementById('chichi-paid');
         const littletPaidEl = document.getElementById('littlet-paid');
+        const expenseDateInput = document.getElementById('expense-date');
+        
+        let editingId = null;
+        expenseDateInput.value = new Date().toISOString().split('T')[0];
 
         const formatMoney = (num) => new Intl.NumberFormat('zh-TW').format(num || 0);
 
@@ -376,34 +362,22 @@
             else storeCustomDiv.classList.add('hidden');
         });
 
-        // --- ✨ 回歸初心：使用你們原本的專屬分類 ---
-        const categoryDocRef = doc(db, "settings", "appCategories");
+        // ==========================================
+        // ✨ 本地儲存庫 (Local Storage) 資料管理中心 ✨
+        // ==========================================
+        
+        // 1. 分類管理
         const defaultCategories = ["設計師裝潢費用", "家電", "軟裝", "裝飾類", "其他"];
+        let appCategories = JSON.parse(localStorage.getItem('appCategories')) || defaultCategories;
 
-        async function initCategories() {
-            try {
-                const docSnap = await getDoc(categoryDocRef);
-                if (!docSnap.exists() || !docSnap.data().list || docSnap.data().list.length === 0) {
-                    await setDoc(categoryDocRef, { list: defaultCategories }, { merge: true });
-                }
-            } catch (e) { console.error("分類初始化失敗", e); }
-        }
-        initCategories();
-
-        onSnapshot(categoryDocRef, (docSnap) => {
-            let cats = defaultCategories; 
-            
-            if (docSnap.exists() && docSnap.data().list && docSnap.data().list.length > 0) {
-                cats = docSnap.data().list; 
-            } else {
-                setDoc(categoryDocRef, { list: defaultCategories }, { merge: true });
-            }
-
+        function renderCategoriesUI() {
+            // 寫入下拉選單
             const catSelect = document.getElementById('category');
-            catSelect.innerHTML = cats.map(c => `<option value="${c}">📌 ${c}</option>`).join('');
+            catSelect.innerHTML = appCategories.map(c => `<option value="${c}">📌 ${c}</option>`).join('');
 
+            // 寫入設定頁清單
             const catSetList = document.getElementById('category-settings-list');
-            catSetList.innerHTML = cats.map(c => `
+            catSetList.innerHTML = appCategories.map(c => `
                 <div class="flex justify-between items-center bg-paper p-3 rounded-2xl text-sm font-bold border border-gray-100 shadow-sm">
                     <span>${c}</span>
                     <button onclick="deleteCategory('${c}')" class="text-red-400 p-2 btn-press bg-white rounded-xl shadow-sm">
@@ -411,26 +385,219 @@
                     </button>
                 </div>
             `).join('');
-        });
+            
+            // 儲存回手機
+            localStorage.setItem('appCategories', JSON.stringify(appCategories));
+        }
 
-        document.getElementById('add-category-btn').addEventListener('click', async () => {
+        document.getElementById('add-category-btn').addEventListener('click', () => {
             const input = document.getElementById('new-category-input');
             const val = input.value.trim();
             if (!val) { alert("請先輸入分類名稱喔！"); return; }
-            const btn = document.getElementById('add-category-btn');
-            try {
-                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; btn.disabled = true;
-                await setDoc(categoryDocRef, { list: arrayUnion(val) }, { merge: true });
-                input.value = '';
-            } catch (e) { alert("新增失敗：" + e.message); } 
-            finally { btn.innerHTML = '<i class="fa-solid fa-plus"></i> 新增'; btn.disabled = false; }
+            if (!appCategories.includes(val)) {
+                appCategories.push(val);
+                renderCategoriesUI();
+            }
+            input.value = '';
         });
 
-        window.deleteCategory = async function(cat) {
+        window.deleteCategory = function(cat) {
             if(confirm(`確定要刪除「${cat}」嗎？`)) {
-                try { await setDoc(categoryDocRef, { list: arrayRemove(cat) }, { merge: true }); } catch (e) { console.error(e); }
+                appCategories = appCategories.filter(c => c !== cat);
+                renderCategoriesUI();
             }
         }
+
+        // 2. 帳目管理
+        let appExpenses = JSON.parse(localStorage.getItem('appExpenses')) || [];
+
+        function renderExpensesUI() {
+            listContainer.innerHTML = '';
+            let total = 0; let chichiTotal = 0; let littletTotal = 0;
+            let categoryData = {}; let areaData = {}; let payerData = {};
+
+            // 確保是最新的在最上面
+            appExpenses.forEach(exp => {
+                const amt = parseInt(exp.amount) || 0;
+                total += amt;
+                
+                const payerStr = exp.payer || '未知';
+                if(payerStr === '芝芝') chichiTotal += amt;
+                else if(payerStr === '小T') littletTotal += amt;
+                
+                categoryData[exp.category || '未分類'] = (categoryData[exp.category || '未分類'] || 0) + amt;
+                areaData[exp.area || '不分區'] = (areaData[exp.area || '不分區'] || 0) + amt;
+                payerData[payerStr] = (payerData[payerStr] || 0) + amt;
+
+                const areaTag = exp.area && exp.area !== '不分區' ? `<span class="bg-babyblue/50 text-textMain px-2 py-0.5 rounded-full">${exp.area}</span>` : '';
+                const storeTag = exp.store ? `<span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full"><i class="fa-solid fa-cart-shopping mr-1"></i>${exp.store}</span>` : '';
+                const photoHtml = exp.photo ? `<img src="${exp.photo}" class="mt-2 w-full h-32 object-cover rounded-xl border">` : '';
+                
+                let avatarColor = 'bg-mint text-textMain'; let avatarChar = payerStr.charAt(0);
+                if (payerStr === '芝芝') { avatarColor = 'bg-sakura text-white'; avatarChar = '芝'; }
+                else if (payerStr === '小T') { avatarColor = 'bg-babyblue text-textMain'; avatarChar = 'T'; }
+
+                const item = document.createElement('div');
+                item.className = 'bg-white p-4 rounded-2xl shadow-sm border border-gray-50';
+                item.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-sm ${avatarColor}">
+                                ${avatarChar}
+                            </div>
+                            <div>
+                                <p class="font-bold text-textMain">${exp.name}</p>
+                                <div class="text-xs text-gray-400 mt-1 flex flex-wrap gap-1 items-center">
+                                    <span>${exp.date || '無日期'}</span>
+                                    <span class="bg-mint/50 text-textMain px-2 py-0.5 rounded-full">${exp.category || '未分類'}</span>
+                                    ${areaTag}
+                                    ${storeTag}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="font-bold text-lg text-sakura">$${formatMoney(amt)}</div>
+                    </div>
+                    ${photoHtml}
+                    <div class="flex justify-end gap-2 mt-3 pt-2 border-t border-gray-100">
+                        <button onclick="startEdit('${exp.id}')" class="text-xs bg-gray-50 text-gray-500 px-3 py-1.5 rounded-xl border border-gray-100 font-bold btn-press"><i class="fa-solid fa-pen-to-square mr-1"></i>修改</button>
+                        <button onclick="deleteExpense('${exp.id}', '${exp.name}')" class="text-xs bg-red-50 text-red-400 px-3 py-1.5 rounded-xl border border-red-100 font-bold btn-press"><i class="fa-solid fa-trash-can mr-1"></i>刪除</button>
+                    </div>
+                `;
+                listContainer.appendChild(item);
+            });
+
+            totalEl.innerText = formatMoney(total);
+            chichiPaidEl.innerText = `$${formatMoney(chichiTotal)}`;
+            littletPaidEl.innerText = `$${formatMoney(littletTotal)}`;
+
+            if (total === 0) {
+                document.getElementById('no-chart-data').classList.remove('hidden');
+                document.getElementById('has-chart-data').classList.add('hidden');
+            } else {
+                document.getElementById('no-chart-data').classList.add('hidden');
+                document.getElementById('has-chart-data').classList.remove('hidden');
+                try {
+                    renderChart('chart-category', categoryData);
+                    renderChart('chart-area', areaData);
+                    renderChart('chart-payer', payerData);
+                } catch(err) { console.error(err); }
+            }
+
+            // 儲存回手機
+            localStorage.setItem('appExpenses', JSON.stringify(appExpenses));
+        }
+
+        // --- 儲存表單控制 (新增與修改) ---
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const amount = parseInt(document.getElementById('amount').value);
+            const name = document.getElementById('item-name').value;
+            const category = document.getElementById('category').value;
+            const area = document.getElementById('area').value; 
+            const paymentMethod = document.getElementById('payment-method').value;
+            
+            const fullDate = document.getElementById('expense-date').value;
+            const dateParts = fullDate.split('-');
+            const dateStr = `${parseInt(dateParts[1])}/${parseInt(dateParts[2])}`;
+
+            let payer = document.querySelector('input[name="payer"]:checked').value;
+            if (payer === '其他') {
+                const customPayer = document.getElementById('payer-other-input').value.trim();
+                payer = customPayer !== '' ? customPayer : '其他成員';
+            }
+
+            let store = document.getElementById('store-select').value;
+            if (store === '實體店面' || store === '其他') {
+                const customStore = document.getElementById('store-other-input').value.trim();
+                store = customStore !== '' ? customStore : store;
+            }
+
+            const expenseData = {
+                amount, name, payer, category, area, paymentMethod, store,
+                photo: currentPhotoBase64, date: dateStr, fullDate: fullDate
+            };
+
+            if (editingId) {
+                // 更新模式
+                const index = appExpenses.findIndex(exp => exp.id === editingId);
+                if (index > -1) {
+                    appExpenses[index] = { ...appExpenses[index], ...expenseData };
+                }
+                cancelEdit();
+            } else {
+                // 新增模式 (建立獨一無二的 ID，並加在陣列最前面)
+                expenseData.id = Date.now().toString();
+                appExpenses.unshift(expenseData); 
+                form.reset(); 
+                removePhoto();
+                document.getElementById('expense-date').value = new Date().toISOString().split('T')[0];
+            }
+            
+            renderExpensesUI();
+            document.getElementById('nav-list').click(); // 自動跳轉到明細頁
+        });
+
+        window.startEdit = function(id) {
+            const data = appExpenses.find(exp => exp.id === id);
+            if (data) {
+                editingId = id;
+
+                document.getElementById('amount').value = data.amount;
+                document.getElementById('item-name').value = data.name;
+                document.getElementById('category').value = data.category || '';
+                document.getElementById('area').value = data.area || '不分區';
+                document.getElementById('payment-method').value = data.paymentMethod || '轉帳';
+                document.getElementById('expense-date').value = data.fullDate || new Date().toISOString().split('T')[0];
+
+                const storeVal = data.store || '';
+                if (['淘寶', '蝦皮', 'MOMO', 'PCHOME', ''].includes(storeVal)) {
+                    storeSelect.value = storeVal; storeCustomDiv.classList.add('hidden');
+                } else {
+                    storeSelect.value = '其他';
+                    document.getElementById('store-other-input').value = storeVal;
+                    storeCustomDiv.classList.remove('hidden');
+                }
+
+                const payerVal = data.payer || '芝芝';
+                if (['芝芝', '小T'].includes(payerVal)) {
+                    document.querySelector(`input[name="payer"][value="${payerVal}"]`).checked = true;
+                    payerCustomDiv.classList.add('hidden');
+                } else {
+                    document.querySelector('input[name="payer"][value="其他"]').checked = true;
+                    document.getElementById('payer-other-input').value = payerVal;
+                    payerCustomDiv.classList.remove('hidden');
+                }
+
+                if (data.photo) {
+                    currentPhotoBase64 = data.photo; photoPreviewImg.src = data.photo; photoPreview.classList.remove('hidden');
+                } else { removePhoto(); }
+
+                const submitBtn = document.getElementById('submit-btn');
+                submitBtn.innerText = '💾 更新這筆花費';
+                submitBtn.classList.remove('bg-sakura'); submitBtn.classList.add('bg-orange-400');
+                document.getElementById('cancel-edit-btn').classList.remove('hidden');
+
+                document.getElementById('nav-home').click();
+            }
+        };
+
+        window.cancelEdit = function() {
+            editingId = null; form.reset(); removePhoto();
+            document.getElementById('expense-date').value = new Date().toISOString().split('T')[0];
+            payerCustomDiv.classList.add('hidden'); storeCustomDiv.classList.add('hidden');
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.innerText = '儲存花費'; submitBtn.disabled = false;
+            submitBtn.classList.remove('bg-orange-400'); submitBtn.classList.add('bg-sakura');
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+        };
+
+        window.deleteExpense = function(id, name) {
+            if (confirm(`確定要刪除「${name}」這筆帳目嗎？`)) {
+                appExpenses = appExpenses.filter(exp => exp.id !== id);
+                renderExpensesUI();
+            }
+        };
+
 
         // --- 照片壓縮處理 ---
         let currentPhotoBase64 = null;
@@ -504,197 +671,12 @@
             });
         }
 
-        // --- 全域：修改與刪除功能 ---
-        window.startEdit = async function(id) {
-            try {
-                const docSnap = await getDoc(doc(db, "expenses", id));
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    editingId = id;
+        // ==========================================
+        // 🚀 網頁載入時，立刻把存在手機裡的資料畫出來
+        // ==========================================
+        renderCategoriesUI();
+        renderExpensesUI();
 
-                    document.getElementById('amount').value = data.amount;
-                    document.getElementById('item-name').value = data.name;
-                    document.getElementById('category').value = data.category || '';
-                    document.getElementById('area').value = data.area || '不分區';
-                    document.getElementById('payment-method').value = data.paymentMethod || '轉帳';
-                    document.getElementById('expense-date').value = data.fullDate || new Date().toISOString().split('T')[0];
-
-                    const storeVal = data.store || '';
-                    if (['淘寶', '蝦皮', 'MOMO', 'PCHOME', ''].includes(storeVal)) {
-                        storeSelect.value = storeVal; storeCustomDiv.classList.add('hidden');
-                    } else {
-                        storeSelect.value = '其他';
-                        document.getElementById('store-other-input').value = storeVal;
-                        storeCustomDiv.classList.remove('hidden');
-                    }
-
-                    const payerVal = data.payer || '芝芝';
-                    if (['芝芝', '小T'].includes(payerVal)) {
-                        document.querySelector(`input[name="payer"][value="${payerVal}"]`).checked = true;
-                        payerCustomDiv.classList.add('hidden');
-                    } else {
-                        document.querySelector('input[name="payer"][value="其他"]').checked = true;
-                        document.getElementById('payer-other-input').value = payerVal;
-                        payerCustomDiv.classList.remove('hidden');
-                    }
-
-                    if (data.photo) {
-                        currentPhotoBase64 = data.photo; photoPreviewImg.src = data.photo; photoPreview.classList.remove('hidden');
-                    } else { removePhoto(); }
-
-                    const submitBtn = document.getElementById('submit-btn');
-                    submitBtn.innerText = '💾 更新這筆花費';
-                    submitBtn.classList.remove('bg-sakura'); submitBtn.classList.add('bg-orange-400');
-                    document.getElementById('cancel-edit-btn').classList.remove('hidden');
-
-                    document.getElementById('nav-home').click();
-                }
-            } catch (e) { alert("讀取花費失敗：" + e.message); }
-        };
-
-        window.cancelEdit = function() {
-            editingId = null; form.reset(); removePhoto();
-            document.getElementById('expense-date').value = new Date().toISOString().split('T')[0];
-            payerCustomDiv.classList.add('hidden'); storeCustomDiv.classList.add('hidden');
-            const submitBtn = document.getElementById('submit-btn');
-            submitBtn.innerText = '儲存花費'; submitBtn.disabled = false;
-            submitBtn.classList.remove('bg-orange-400'); submitBtn.classList.add('bg-sakura');
-            document.getElementById('cancel-edit-btn').classList.add('hidden');
-        };
-
-        window.deleteExpense = async function(id, name) {
-            if (confirm(`確定要刪除「${name}」這筆帳目嗎？`)) {
-                try { await deleteDoc(doc(db, "expenses", id)); } catch (e) { alert("刪除失敗：" + e.message); }
-            }
-        };
-
-        // --- 核心：即時同步監聽明細與圖表 ---
-        const expensesRef = collection(db, "expenses");
-        const q = query(expensesRef, orderBy("timestamp", "desc"));
-
-        onSnapshot(q, (snapshot) => {
-            listContainer.innerHTML = '';
-            let total = 0; let chichiTotal = 0; let littletTotal = 0;
-            let categoryData = {}; let areaData = {}; let payerData = {};
-
-            snapshot.forEach((docSnap) => {
-                const exp = docSnap.data();
-                const docId = docSnap.id;
-                
-                const amt = parseInt(exp.amount) || 0;
-                total += amt;
-                
-                const payerStr = exp.payer || '未知';
-                if(payerStr === '芝芝') chichiTotal += amt;
-                else if(payerStr === '小T') littletTotal += amt;
-                
-                categoryData[exp.category || '未分類'] = (categoryData[exp.category || '未分類'] || 0) + amt;
-                areaData[exp.area || '不分區'] = (areaData[exp.area || '不分區'] || 0) + amt;
-                payerData[payerStr] = (payerData[payerStr] || 0) + amt;
-
-                const areaTag = exp.area && exp.area !== '不分區' ? `<span class="bg-babyblue/50 text-textMain px-2 py-0.5 rounded-full">${exp.area}</span>` : '';
-                const storeTag = exp.store ? `<span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full"><i class="fa-solid fa-cart-shopping mr-1"></i>${exp.store}</span>` : '';
-                const photoHtml = exp.photo ? `<img src="${exp.photo}" class="mt-2 w-full h-32 object-cover rounded-xl border">` : '';
-                
-                let avatarColor = 'bg-mint text-textMain'; let avatarChar = payerStr.charAt(0);
-                if (payerStr === '芝芝') { avatarColor = 'bg-sakura text-white'; avatarChar = '芝'; }
-                else if (payerStr === '小T') { avatarColor = 'bg-babyblue text-textMain'; avatarChar = 'T'; }
-
-                const item = document.createElement('div');
-                item.className = 'bg-white p-4 rounded-2xl shadow-sm border border-gray-50';
-                item.innerHTML = `
-                    <div class="flex justify-between items-start">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-sm ${avatarColor}">
-                                ${avatarChar}
-                            </div>
-                            <div>
-                                <p class="font-bold text-textMain">${exp.name}</p>
-                                <div class="text-xs text-gray-400 mt-1 flex flex-wrap gap-1 items-center">
-                                    <span>${exp.date || '無日期'}</span>
-                                    <span class="bg-mint/50 text-textMain px-2 py-0.5 rounded-full">${exp.category || '未分類'}</span>
-                                    ${areaTag}
-                                    ${storeTag}
-                                </div>
-                            </div>
-                        </div>
-                        <div class="font-bold text-lg text-sakura">$${formatMoney(amt)}</div>
-                    </div>
-                    ${photoHtml}
-                    <div class="flex justify-end gap-2 mt-3 pt-2 border-t border-gray-100">
-                        <button onclick="startEdit('${docId}')" class="text-xs bg-gray-50 text-gray-500 px-3 py-1.5 rounded-xl border border-gray-100 font-bold btn-press"><i class="fa-solid fa-pen-to-square mr-1"></i>修改</button>
-                        <button onclick="deleteExpense('${docId}', '${exp.name}')" class="text-xs bg-red-50 text-red-400 px-3 py-1.5 rounded-xl border border-red-100 font-bold btn-press"><i class="fa-solid fa-trash-can mr-1"></i>刪除</button>
-                    </div>
-                `;
-                listContainer.appendChild(item);
-            });
-
-            totalEl.innerText = formatMoney(total);
-            chichiPaidEl.innerText = `$${formatMoney(chichiTotal)}`;
-            littletPaidEl.innerText = `$${formatMoney(littletTotal)}`;
-
-            if (total === 0) {
-                document.getElementById('no-chart-data').classList.remove('hidden');
-                document.getElementById('has-chart-data').classList.add('hidden');
-            } else {
-                document.getElementById('no-chart-data').classList.add('hidden');
-                document.getElementById('has-chart-data').classList.remove('hidden');
-                try {
-                    renderChart('chart-category', categoryData);
-                    renderChart('chart-area', areaData);
-                    renderChart('chart-payer', payerData);
-                } catch(err) { console.error(err); }
-            }
-        });
-
-        // --- 儲存表單控制 ---
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const amount = parseInt(document.getElementById('amount').value);
-            const name = document.getElementById('item-name').value;
-            const category = document.getElementById('category').value;
-            const area = document.getElementById('area').value; 
-            const paymentMethod = document.getElementById('payment-method').value;
-            
-            const fullDate = document.getElementById('expense-date').value;
-            const dateParts = fullDate.split('-');
-            const dateStr = `${parseInt(dateParts[1])}/${parseInt(dateParts[2])}`;
-
-            let payer = document.querySelector('input[name="payer"]:checked').value;
-            if (payer === '其他') {
-                const customPayer = document.getElementById('payer-other-input').value.trim();
-                payer = customPayer !== '' ? customPayer : '其他成員';
-            }
-
-            let store = document.getElementById('store-select').value;
-            if (store === '實體店面' || store === '其他') {
-                const customStore = document.getElementById('store-other-input').value.trim();
-                store = customStore !== '' ? customStore : store;
-            }
-
-            try {
-                const submitBtn = document.getElementById('submit-btn');
-                submitBtn.innerText = '處理中...'; submitBtn.disabled = true;
-
-                const expenseData = {
-                    amount, name, payer, category, area, paymentMethod, store,
-                    photo: currentPhotoBase64, date: dateStr, fullDate: fullDate, timestamp: new Date()
-                };
-
-                if (editingId) {
-                    await setDoc(doc(db, "expenses", editingId), expenseData, { merge: true }); cancelEdit();
-                } else {
-                    await addDoc(collection(db, "expenses"), expenseData);
-                    form.reset(); removePhoto();
-                    document.getElementById('expense-date').value = new Date().toISOString().split('T')[0];
-                }
-                document.getElementById('nav-list').click();
-            } catch (e) { alert("操作失敗！原因：\n" + e.message); } 
-            finally {
-                const submitBtn = document.getElementById('submit-btn');
-                if(!editingId) { submitBtn.innerText = '儲存花費'; submitBtn.disabled = false; }
-            }
-        });
     </script>
 </body>
 </html>
